@@ -13,9 +13,20 @@ export const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV ?? "development";
 /** True when running in the demo-friendly environment (`EXPO_PUBLIC_APP_ENV=demo`). */
 export const isDemo = APP_ENV === "demo";
 
+/**
+ * Demo-mode-only credentials for the seeded, pre-verified demo account. These
+ * are used ONLY when `isDemo` is true (the demo dev-bypass sign-in) and depend
+ * on a seeded demo account (a later demo-protection task). They are throwaway
+ * demo creds — NOT production credentials — and are inert in non-demo builds.
+ */
+export const DEMO_EMAIL = process.env.EXPO_PUBLIC_DEMO_EMAIL ?? "";
+export const DEMO_PASSWORD = process.env.EXPO_PUBLIC_DEMO_PASSWORD ?? "";
+
 export const env = {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   APP_ENV,
   isDemo,
+  DEMO_EMAIL,
+  DEMO_PASSWORD,
 } as const;
