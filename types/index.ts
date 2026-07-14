@@ -34,3 +34,60 @@ export type AuthStatus =
   | "unauthenticated"
   | "unverified"
   | "authenticated";
+
+
+/**
+ * A listing image row (`public.listing_images`). See design.md §1.3 table
+ * `listing_images` and Req 9.1. `storage_path` references the underlying object
+ * in Supabase_Storage; `display_order` orders images within a listing (the
+ * lowest order is the primary/cover image shown in the feed).
+ */
+export type ListingImage = {
+  id: string;
+  listing_id: string;
+  storage_path: string;
+  display_order: number;
+};
+
+/**
+ * Lifecycle state of a Listing (design.md §1.3 enum `listing_status`,
+ * Req 4.6, 13.5). Only `active` listings are browsable in the feed.
+ */
+export type ListingStatus = "active" | "reserved" | "sold" | "donated";
+
+/**
+ * Classification of a Listing (design.md §1.3 enum `listing_type`, Req 3.1).
+ * `donate` listings omit price (Req 3.5).
+ */
+export type ListingType = "sell" | "donate";
+
+/**
+ * A marketplace listing (`public.listings`). See design.md §1.3 table
+ * `listings` and Req 9.1. `price` is null for `donate` listings (Req 3.5) and
+ * required for `sell` listings (Req 3.9). `campus_id` scopes the listing to its
+ * seller's campus, enforced by RLS (Req 2.3, 9.3).
+ */
+export type Listing = {
+  id: string;
+  seller_id: string;
+  campus_id: string;
+  listing_type: ListingType;
+  title: string;
+  description: string | null;
+  category: string;
+  condition: string | null;
+  price: number | null;
+  status: ListingStatus;
+  carbon_savings_g: number | null;
+  published_at: string | null;
+  created_at: string;
+};
+
+/**
+ * A Listing joined with its related `listing_images` rows (the PostgREST
+ * embedded-relationship shape used by the feed + detail queries, design §1.6
+ * Flow 4). Images are ordered client-side by `display_order`.
+ */
+export type ListingWithImages = Listing & {
+  listing_images: ListingImage[];
+};
