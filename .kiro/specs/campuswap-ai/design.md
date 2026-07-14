@@ -1030,11 +1030,11 @@ Priorities are demo-driven. **P0** is the minimum for a working, credible end-to
 ### P0 — Must-have for a working demo
 | Capability | Requirements | Why P0 |
 |-----------|--------------|--------|
-| Onboarding + campus isolation | Req 1, 2, 9, 11 | Nothing works without a verified, campus-scoped identity; also the trust story. |
-| AI listing creation (sell/donate) | Req 3, 10.2 | The core "wow" of AI automation; must have a manual fallback so the demo never stalls. |
-| Campus feed + rule-based recommendations | Req 4, 8 | The primary browsing surface judges will see first. |
-| Minimal realtime messaging | Req 5 | Proves buyer↔seller coordination without payments; realtime feels live on stage. |
-| Reservation system (no payment) | Req 13 | Shows intent-to-pickup and the facilitate-only model concretely. |
+| Onboarding + campus isolation | Req 1, 2, 9, 11 | Nothing works without a verified, campus-scoped identity; Supabase Auth email OTP + RLS enforce campus scoping — also the trust story. |
+| AI listing creation (sell/donate) | Req 3, 10.2 | The core "wow" of AI automation via the `ai-generate-listing` Edge Function; must have a manual fallback so the demo never stalls. |
+| Campus feed + rule-based recommendations | Req 4, 8 | The primary browsing surface judges will see first, served over PostgREST under RLS. |
+| Minimal realtime messaging | Req 5 | Proves buyer↔seller coordination without payments; Supabase Realtime feels live on stage. |
+| Reservation system (no payment) | Req 13 | Shows intent-to-pickup and the facilitate-only model concretely (single-active partial unique index). |
 | Sustainability dashboard (carbon) | Req 6 | The heart of the sustainability pitch — per-user + per-campus carbon savings. |
 
 ### P1 — Strong differentiators (land if time allows)
@@ -1042,8 +1042,8 @@ Priorities are demo-driven. **P0** is the minimum for a working, credible end-to
 |-----------|--------------|--------|
 | Need It requests | Req 12 | Two-sided marketplace demand signal; great narrative but not required for a linear demo. |
 | Gamification: points + badges + leaderboard | Req 14 | **Sustainability-judge showcase** — turns carbon savings into visible rewards + campus competition. |
-| In-app notifications | Req 15 | Drives re-engagement for reservations, messages, badges, and Need It responses; in-app only (no push). |
-| Carbon AI refinement | Req 6.2 | Sharper carbon numbers via Gemini; falls back cleanly to the category map (P0). |
+| In-app notifications | Req 15 | Drives re-engagement for reservations, messages, badges, and Need It responses; created via service-role insert + delivered over Supabase Realtime; in-app only (no push). |
+| Carbon AI refinement | Req 6.2 | Sharper carbon numbers via the `ai-estimate-carbon` Edge Function (Gemini 2.5 Flash); falls back cleanly to the category map (P0). |
 
 ### P2 — Nice-to-have / stretch
 | Capability | Requirements | Why P2 |
@@ -1054,89 +1054,124 @@ Priorities are demo-driven. **P0** is the minimum for a working, credible end-to
 
 > Build order guidance: complete all P0 first (linear demo path), then layer gamification (P1) because it is the highest-impact differentiator for the target judges, then Need It, then in-app notifications, then any P2 polish.
 
-## 4.2 Screens List (React Native)
+## 4.2 Screens — Expo Router Routes
 
-| Screen | Purpose | Requirements |
-|--------|---------|--------------|
-| Email Entry | Enter institutional email, request OTP | 1.1–1.3, 10.1 |
-| OTP Entry | Enter code, verify, assign campus | 1.4–1.8 |
-| Feed / Home | Campus-scoped active listings, recency order, recommendations | 2.2, 4.1, 4.4, 8.1, 8.2 |
-| Search / Filter | Keyword search + category filter, empty state | 4.2, 4.3, 4.5 |
-| Listing Detail | Photos, details, contact action, **reservation state + actions** | 4.6, 5.1, 13.1–13.8 |
-| Create Listing (AI) | Type select, image upload (listing_images), AI generate + editable fields, publish validation | 3.1–3.9, 8.3, 10.2 |
-| Need It List | Browse campus `open` requests | 12.3, 12.4 |
-| Create Need It | Title/description/category + optional budget | 12.1, 12.2 |
-| Messaging — Thread List | List of the user's threads | 5.1, 2.4 |
-| Message Thread | Plain-text realtime messages, timestamps, offline guidance | 5.3–5.9 |
-| Notifications | Recipient-scoped, most-recent-first list; mark-read; deep-link to target | 15.6–15.9 |
-| Profile | Campus, cumulative carbon, own listings, **points + badges** | 7.1, 7.2, 6.4, 14.8 |
-| Sustainability Dashboard | Per-user + per-campus carbon totals, directional labeling | 6.4, 6.5, 6.6 |
-| Leaderboard | Campus-scoped ranking by points/carbon | 14.6, 14.7 |
+Screens are file-based routes under `app/`, organized with route groups. Each route maps to the requirements it satisfies.
 
-> Reservation UI lives *within* Listing Detail (Reserve / Reserved indicator / Release / Seller-complete) rather than as a standalone screen, keeping navigation lean for a small team. A notification badge/entry point can live in the app header linking to the Notifications screen.
+| Route | Screen / Purpose | Requirements |
+|-------|------------------|--------------|
+| `(auth)/email.tsx` | Email Entry — enter institutional email, request OTP | 1.1–1.3, 10.1 |
+| `(auth)/otp.tsx` | OTP Entry — enter code, verify, assign campus by domain | 1.4–1.8 |
+| `(tabs)/index.tsx` | Feed / Home — campus-scoped active listings, recency order, recommendations | 2.2, 4.1, 4.4, 8.1, 8.2 |
+| `(tabs)/search.tsx` | Search / Filter — keyword search + category filter, empty state | 4.2, 4.3, 4.5 |
+| `(tabs)/needit.tsx` | Need It List — browse campus `open` requests | 12.3, 12.4 |
+| `(tabs)/profile.tsx` | Profile — campus, cumulative carbon, own listings, **points + badges** | 7.1, 7.2, 6.4, 14.8 |
+| `listing/[id].tsx` | Listing Detail — photos, details, contact action, **reservation state + actions** | 4.6, 5.1, 13.1–13.8 |
+| `listing/create.tsx` | Create Listing (AI) — type select, image upload (Supabase Storage → `listing_images`), AI generate + editable fields, publish validation | 3.1–3.9, 8.3, 10.2 |
+| `needit/create.tsx` | Create Need It — title/description/category + optional budget | 12.1, 12.2 |
+| `chat/index.tsx` | Thread List — list of the user's threads | 5.1, 2.4 |
+| `chat/[threadId].tsx` | Message Thread — plain-text realtime messages, timestamps, offline guidance | 5.3–5.9 |
+| `dashboard/index.tsx` | Sustainability Dashboard — per-user + per-campus carbon totals, directional labeling | 6.4, 6.5, 6.6 |
+| `dashboard/leaderboard.tsx` | Leaderboard — campus-scoped ranking by points/carbon | 14.6, 14.7 |
+| `profile/index.tsx` | Profile detail (if surfaced separately from the tab) | 7.1, 7.2, 6.4, 14.8 |
+| `notifications/index.tsx` | Notifications — recipient-scoped, most-recent-first list; mark-read; deep-link to target | 15.6–15.9 |
+
+> Reservation UI lives *within* `listing/[id].tsx` (Reserve / Reserved indicator / Release / Seller-complete) rather than as a standalone route, keeping navigation lean for a small team. A notification badge/entry point lives in the app header (root layout) linking to `notifications/index.tsx`.
 
 ## 4.3 Demo Flow (scripted, judge-facing)
 
-A single ~4-minute narrative that lands the sustainability story. Run on seeded data so every screen looks populated.
+A single ~4-minute narrative that lands the sustainability story around one item — a **bicycle** — run on seeded data so every screen looks populated. The payoff is the **hero number: "kg CO₂e saved."**
 
-1. **Verify (trust).** Enter `student@university.edu` → receive OTP → verify → land on the Pune campus feed. *Say: "Only verified students in this campus can see or transact — trust by design."*
-2. **Create with AI (automation).** Tap Create → choose **Donate** → snap/upload a photo of a textbook → Gemini fills title, description, condition → publish. *Say: "AI turns a photo into a quality listing in seconds; if AI is down, manual entry still works."*
-3. **Browse + reserve (coordination).** Switch to a second student → open the listing → **Reserve** it → listing flips to *Reserved*; seller gets an **in-app notification**. *Say: "No money touches the app — reserving just signals pickup intent."*
-4. **Message to coordinate (realtime).** Open the thread, send "Can we meet at the library at 5?" → message appears in realtime on the first device and raises an in-app notification. *Say: "Coordination is in-app; the exchange happens offline."*
-5. **Mark sold/donated (completion).** Seller confirms completion → listing becomes *Donated*, thread preserved, buyer notified. 
-6. **Sustainability payoff (the win).** Open the **Sustainability Dashboard** → personal + campus carbon savings tick up → open **Profile** to show **points increased and a badge earned** (e.g., *First Donation*) with a **badge notification** → open the **Leaderboard** to show the student climbing the campus ranking. *Say: "Every reuse is measured in CO2e, rewarded with points and badges, and celebrated on a campus leaderboard — sustainability becomes a game students want to win."*
+1. **Login with college email.** Enter a college email → Supabase Auth sends an email OTP → verify → campus is assigned automatically by email domain. *Say: "Only verified students in this campus can see or transact — trust by design."*
+2. **Upload bicycle image.** Tap Create → choose **Sell/Donate** → snap/upload a photo of a bicycle → the image lands in Supabase Storage. *Say: "One photo is all it takes to start."*
+3. **Gemini generates the listing.** The `ai-generate-listing` Edge Function calls Gemini 2.5 Flash to fill title, description, and condition; if AI is unavailable, a manual fallback keeps the flow moving. *Say: "AI turns a photo into a quality listing in seconds — with a manual fallback so the demo never stalls."*
+4. **Publish listing.** Publish inserts the listing over PostgREST under RLS, with at least one `listing_images` record. *Say: "Published straight into the campus feed."*
+5. **Matching student is notified.** A matching student receives an **in-app notification** (service-role insert + Supabase Realtime delivery). *Say: "The right student hears about it instantly."*
+6. **Student reserves the item.** The second student **reserves** the bicycle; a single-active partial unique index guarantees one active reservation, and the listing flips to *reserved*. *Say: "No money touches the app — reserving just signals pickup intent."*
+7. **Realtime chat to coordinate.** The two students exchange plain-text messages over Supabase Realtime to arrange the handoff. *Say: "Coordination is in-app; the exchange happens offline."*
+8. **Complete the exchange.** The `reserve-complete` Edge Function transitions the listing to *sold* or *donated*, preserving the thread. *Say: "One tap closes the loop."*
+9. **Sustainability dashboard updates.** Carbon aggregation runs and the **Sustainability Dashboard** hero number — **"kg CO₂e saved"** — ticks up for the student and the campus. *Say: "Every reuse is measured in CO₂e — impact you can see."*
+10. **Leaderboard updates.** The campus-scoped **Leaderboard** re-ranks by points/carbon and the student climbs. *Say: "Sustainability becomes a game students want to win."*
 
 **Suggested seed data** (so the demo looks alive):
-- 1 active campus (Pune) + 1 domain map entry.
-- 2–3 verified demo students with varied `points`, `cumulative_carbon_g`, and a couple of pre-earned badges.
-- 8–12 listings across categories (books, electronics, furniture, cycles) with a mix of `active`/`reserved`/`sold`/`donated`, each with ≥1 seeded `listing_images` record.
-- 2–3 `open` Need It requests.
-- A pre-seeded message thread with a few messages.
+- 1 active `campus` (e.g., Pune) + a `domain_campus_map` entry mapping the email domain to that campus.
+- 2–3 verified demo `profiles` with varied `points`, `cumulative_carbon_g`, and a couple of pre-earned badges.
+- 8–12 `listings` across categories (books, electronics, furniture, cycles) with a mix of `active`/`reserved`/`sold`/`donated`, each with ≥1 seeded `listing_images` record.
+- 2–3 `open` `need_it_requests`.
+- A pre-seeded message thread with a few `messages`.
 - A few seeded `notifications` for a demo student (a reservation, a message, a badge).
-- Seeded `carbon_category_map` and `badges` config (first_donation, carbon_kg milestone, completed_count).
+- Seeded `carbon_category_map` and `badges` config (e.g., first_donation, carbon_kg milestone, completed_count).
 
 ## 4.4 Recommended File / Folder Structure
 
-Monorepo-style, small-team friendly: the React Native app and the PocketBase backend live side by side, with shared docs.
+Production-ready React Native + Expo Router client with a Supabase backend (migrations, Edge Functions, and seed) living in the same repo.
 
 ```
-campuswap-ai/
-├── app/                          # React Native (Expo-friendly) client
-│   ├── screens/                  # One file per screen (see §4.2)
-│   │   ├── EmailEntry.tsx
-│   │   ├── OtpEntry.tsx
-│   │   ├── Feed.tsx
-│   │   ├── SearchFilter.tsx
-│   │   ├── ListingDetail.tsx     # includes reservation UI
-│   │   ├── CreateListing.tsx
-│   │   ├── NeedItList.tsx
-│   │   ├── CreateNeedIt.tsx
-│   │   ├── ThreadList.tsx
-│   │   ├── MessageThread.tsx
-│   │   ├── Notifications.tsx
-│   │   ├── Profile.tsx
-│   │   ├── SustainabilityDashboard.tsx
-│   │   └── Leaderboard.tsx
-│   ├── components/               # Reusable UI (ListingCard, BadgeChip, CarbonStat, NotificationItem, etc.)
-│   ├── lib/
-│   │   └── pocketbase.ts         # PB client init, auth token, realtime helpers
-│   ├── hooks/                    # useAuth, useFeed, useThread, useReservation, useLeaderboard, useNotifications
-│   └── navigation/               # Stack/tab navigators
-│
-├── pocketbase/                   # Backend (single binary + custom logic)
-│   ├── pb_hooks/                 # JS hooks
-│   │   ├── onboarding.pb.js      # domain check, OTP gen/verify/expiry
-│   │   ├── ai_proxy.pb.js        # Gemini proxy (key stays server-side)
-│   │   ├── carbon.pb.js          # baseline + optional AI refine + aggregation
-│   │   ├── integrity.pb.js       # listing.campus == seller.campus
-│   │   ├── reservations.pb.js    # single-active invariant, lifecycle, seller-complete
-│   │   ├── needit.pb.js          # owner-only close, campus/status defaults
-│   │   ├── notifications.pb.js   # create in-app notifications on key events (in-app only)
-│   │   └── gamification.pb.js    # points/badges awards, leaderboard endpoint
-│   ├── pb_migrations/            # Collection schema + API rules (versioned)
-│   └── seed/                     # Seed data + config (campuses, domain map, carbon map, badges, demo data)
-│
-└── docs/                         # This spec, demo script, setup/run notes
+CampusSwap-AI/
+├── app/                        # Expo Router (file-based routes)
+│   ├── (auth)/                 # email.tsx, otp.tsx
+│   ├── (tabs)/                 # index (feed), search, needit, profile
+│   ├── listing/                # [id].tsx (detail+reservation), create.tsx
+│   ├── chat/                   # index.tsx (threads), [threadId].tsx
+│   ├── dashboard/              # index.tsx (sustainability), leaderboard.tsx
+│   ├── profile/                # profile detail (if separate from tabs)
+│   ├── notifications/          # index.tsx
+│   └── _layout.tsx             # root layout / providers (QueryClient, auth gate)
+├── components/                 # reusable UI (ListingCard, BadgeChip, CarbonStat, NotificationItem…)
+├── features/                   # feature modules (listings, needit, reservations, chat, gamification…)
+├── services/                   # typed wrappers over supabase-js (authService, listingService, …)
+├── stores/                     # Zustand stores (auth, filters, draft)
+├── hooks/                      # TanStack Query hooks (useFeed, useThread, useReservation, useNotifications…)
+├── lib/                        # supabase client init, query client, env, theme (NativeWind)
+├── utils/                      # formatters, carbon helpers, validators
+├── types/                      # shared TS types + Zod schemas + generated DB types
+├── supabase/
+│   ├── migrations/             # SQL: tables, enums, indexes, RLS policies
+│   ├── functions/              # Edge Functions: ai-generate-listing, ai-estimate-carbon, reserve-complete, (send-otp-email)
+│   └── seed/                   # seed data (campus, domain map, carbon map, badges, demo data)
+├── .env.example
+├── app.json / eas.json
+└── README.md
 ```
 
-> Keep it flat and pragmatic: `pb_migrations` capture schema + rules so the whole team runs an identical backend, and `seed/` guarantees the demo always looks populated.
+> `app/` uses Expo Router file-based routing (route groups keep auth and tabs isolated); `services/` and `hooks/` separate typed supabase-js access from TanStack Query data-fetching; `supabase/migrations` capture schema + RLS so the whole team runs an identical backend, and `supabase/seed` guarantees the demo always looks populated.
+
+## 4.5 Environment Variables
+
+CampusSwap-AI splits configuration into **client-safe** values (bundled into the app) and **server-only secrets** (available only inside Edge Functions).
+
+**Client (safe to ship in the app bundle)** — must be prefixed `EXPO_PUBLIC_`:
+- `EXPO_PUBLIC_SUPABASE_URL` — the project's Supabase URL.
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` — the anon key (RLS enforces all access).
+- `EXPO_PUBLIC_APP_ENV` — environment label (e.g., `development` / `production`).
+
+**Server / Edge Function secrets (NEVER public, NEVER `EXPO_PUBLIC_`):**
+- `SUPABASE_SERVICE_ROLE_KEY` — service-role key for privileged inserts (e.g., notifications).
+- `GEMINI_API_KEY` — Gemini 2.5 Flash key for AI listing generation and carbon estimation.
+- `RESEND_API_KEY` — Resend API key for transactional email.
+- `RESEND_FROM_EMAIL` — verified sender address for Resend.
+- `POSTHOG_KEY` — optional/future analytics.
+
+> The service-role key, Gemini key, and Resend keys are **Edge-Function-only**. They must never appear in the client bundle and must never be exposed through any `EXPO_PUBLIC_` variable.
+
+## 4.6 Dependencies
+
+**Frontend (npm):**
+- `expo`, `expo-router` — app runtime + file-based routing.
+- `nativewind` + `tailwindcss` — styling (NativeWind v5).
+- `zustand` — local/client state.
+- `@tanstack/react-query` — server state / data fetching.
+- `react-hook-form` + `zod` — forms and validation schemas.
+- `@supabase/supabase-js` — Supabase client (auth, data, storage, realtime).
+- `expo-image-picker` — capture/select listing images.
+- `expo-secure-store` — secure session/token storage.
+- `react-native-reanimated` + `moti` — animations.
+- `lucide-react-native` — icons.
+- `react-native-url-polyfill` — URL polyfill required by supabase-js on React Native.
+
+**Backend / Edge Functions (Deno / CLI):**
+- `supabase` CLI — migrations, functions, and local dev.
+- Within functions: `@supabase/supabase-js` (service role), `@google/generative-ai` (Gemini 2.5 Flash), `resend`.
+
+**Optional:**
+- `posthog-react-native` — future analytics.
