@@ -3,13 +3,15 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
 import { ListingDetail } from "@/components/ListingDetail";
+import { ReservationActions } from "@/components/ReservationActions";
 import { useListing } from "@/hooks/useListings";
 
 /**
  * Listing Detail screen (design §4.2 `listing/[id].tsx`, Req 4.6). Reads the
  * `id` route param, loads the listing via `useListing`, and renders the
- * presentational <ListingDetail />. Shows a loading spinner and a friendly
- * not-found state. Reservation/contact actions are added by later tasks.
+ * presentational <ListingDetail /> plus <ReservationActions /> (the reservation
+ * lifecycle UI — reserve / reserved / release / seller-complete, §1.6 Flow 6,
+ * Req 13.1–13.8). Shows a loading spinner and a friendly not-found state.
  */
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -58,7 +60,14 @@ export default function ListingDetailScreen() {
           </Text>
         </View>
       ) : (
-        <ListingDetail listing={listing} />
+        <View className="flex-1">
+          {/* Scrollable listing detail fills the available space… */}
+          <ListingDetail listing={listing} />
+          {/* …with the reservation actions pinned below it (design §4.2). */}
+          <View className="pb-8">
+            <ReservationActions listing={listing} />
+          </View>
+        </View>
       )}
     </View>
   );

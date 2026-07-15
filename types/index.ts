@@ -91,3 +91,54 @@ export type Listing = {
 export type ListingWithImages = Listing & {
   listing_images: ListingImage[];
 };
+
+
+
+/**
+ * Lifecycle state of a Reservation (design.md §1.3 enum `reservation_status`,
+ * Req 13.1, 13.6, 13.7). `active` blocks other reservations on the same listing
+ * (enforced by the partial unique index); `released` returns the listing to
+ * `active`; `completed` is set when the seller marks the listing sold/donated.
+ */
+export type ReservationStatus = "active" | "released" | "completed";
+
+/**
+ * The outcome a Seller chooses when completing a reserved listing (Req 13.6).
+ * Maps directly onto the terminal `listing_status` values.
+ */
+export type ReservationOutcome = "sold" | "donated";
+
+/**
+ * A no-payment reservation (`public.reservations`). See design.md §1.3 table
+ * `reservations` and Req 13.1–13.8. There is NO monetary column by design —
+ * reserving is a pickup-intent signal only (Req 13.4, §2.9).
+ */
+export type Reservation = {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  campus_id: string;
+  status: ReservationStatus;
+  created_at: string;
+};
+
+/**
+ * The active reservation for a listing with its buyer profile embedded (the
+ * PostgREST embedded-relationship shape returned by
+ * `reservationService.fetchActiveReservation`). Used by the listing detail to
+ * show the reserver (to the seller) or the seller/reservation context to the
+ * buyer. Note: RLS only exposes this row to same-campus participants (buyer or
+ * the listing's seller); a non-participant reads back `null` (design §1.5).
+ */
+export type ActiveReservation = {
+  id: string;
+  listing_id: string;
+  buyer_id: string;
+  campus_id: string;
+  status: ReservationStatus;
+  created_at: string;
+  buyer: {
+    display_name: string | null;
+    email: string;
+  } | null;
+};
