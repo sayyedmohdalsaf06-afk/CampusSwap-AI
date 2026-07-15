@@ -51,6 +51,26 @@ export async function fetchFeedPage({
 }
 
 /**
+ * Fetch all listings owned by a seller (with their images), newest first
+ * (design §4.2 Profile; Req 7.2). Unlike the feed this is NOT restricted to
+ * `status = 'active'` — the profile shows the seller's own listings across all
+ * statuses (active/reserved/sold/donated). RLS still scopes visibility to the
+ * caller's own rows, so a seller only ever reads back their own listings.
+ */
+export async function fetchMyListings(
+  sellerId: string
+): Promise<ListingWithImages[]> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_WITH_IMAGES_SELECT)
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as ListingWithImages[] | null) ?? [];
+}
+
+/**
  * Fetch a single listing (with its images) by id, or null when it does not
  * exist / is not visible to the caller under RLS (Req 4.6, 2.2).
  */

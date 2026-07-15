@@ -7,6 +7,7 @@ import {
 import {
   fetchFeedPage,
   fetchListingById,
+  fetchMyListings,
 } from "@/services/listingService";
 import type { ListingWithImages } from "@/types";
 
@@ -60,5 +61,18 @@ export function useListing(id: string | undefined) {
     queryKey: ["listing", id],
     queryFn: () => fetchListingById(id as string),
     enabled: Boolean(id),
+  });
+}
+
+/**
+ * Current student's own listings for the Profile screen (design §4.2 Profile,
+ * Req 7.2). Disabled until a `sellerId` is available (e.g. while the auth
+ * profile hydrates) so we never query with an undefined owner.
+ */
+export function useMyListings(sellerId: string | undefined) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["my-listings", sellerId],
+    queryFn: () => fetchMyListings(sellerId as string),
+    enabled: Boolean(sellerId),
   });
 }
