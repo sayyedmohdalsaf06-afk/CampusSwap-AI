@@ -8,6 +8,7 @@ import {
   fetchFeedPage,
   fetchListingById,
   fetchMyListings,
+  searchListings,
 } from "@/services/listingService";
 import type { ListingWithImages } from "@/types";
 
@@ -61,6 +62,25 @@ export function useListing(id: string | undefined) {
     queryKey: ["listing", id],
     queryFn: () => fetchListingById(id as string),
     enabled: Boolean(id),
+  });
+}
+
+/**
+ * Search + category-filter hook for the Search screen (design §4.2
+ * `(tabs)/search.tsx`; Req 4.2, 4.3, 4.5, 4.6). Always enabled — an empty query
+ * with no category simply returns the recent active campus feed, so the screen
+ * shows content on first open. Campus scope + active-only are enforced by RLS
+ * and the service query (Req 2.2, 4.6).
+ *
+ * The query key includes both inputs so results are cached per (query, category)
+ * combination. A short `staleTime` avoids refetching while the user tweaks
+ * filters within a few seconds.
+ */
+export function useSearchListings(query: string, category: string | null) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["search", query, category],
+    queryFn: () => searchListings({ query, category }),
+    staleTime: 30_000,
   });
 }
 

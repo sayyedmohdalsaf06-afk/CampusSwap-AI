@@ -50,6 +50,78 @@ export async function fetchFeedPage({
   return (data as ListingWithImages[] | null) ?? [];
 }
 
+/** Parameters for a campus feed search + category filter (design §1.6 Flow 4). */
+export type SearchListingsParams = {
+  /** Free-text query matched against title/description/category (Req 4.2). */
+  query?: string;
+  /** Optional category filter; null/undefined means "no category filter" (Req 4.3). */
+  category?: string | null;
+  /** Page size (bounded/incremental load — Req 8.2). */
+  limit?: number;
+  /** Zero-based offset into the result set. */
+  offset?: number;
+};
+
+/**
+ * Escape a user-supplied search term so it is safe to interpolate into a
+ * PostgREST `or(...)` filter expression. PostgREST parses commas and
+ * parentheses as filter syntax and treats `%` as a wildcard, so we strip those
+ * characters (plus backslashes) from the trimmed term. The result is a plain
+ * substring that can be wrapped in `%...%` for an `ilike` match (Req 4.2).
+ */
+function sanitizeSearchTerm(raw: string): string {
+  return raw
+    .trim()
+    .replace(/[,()%\\*]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Search + filter the campus feed (design §1.6 Flow 4; Req 2.2, 4.2, 4.3, 4.6).
+ *
+ * - `status = 'active'` — search/browse returns active listings only (Req 4.6);
+ *   RLS already scopes rows to the caller's campus (Req 2.2), so no campus
+ *   filter is expressed here.
+ * - When `category` is set → filter to that category (Req 4.3).
+ * - When `query` is a non-empty (post-sanitize) string → match title,
+ *   description, OR category via case-insensitive `ilike` (Req 4.2).
+ * - Ordered by `published_at` (recent first, nulls last) then `created_at`, and
+ *   bounded with `range(offset, offset + limit - 1)` (Req 8.2).
+ *
+ * With an empty query and no category this degrades to the recent active feed.
+ */
+export async function searchListings({
+  query,
+  category,
+  limit = 20,
+  offset = 0,
+}: SearchListingsParams = {}): Promise<ListingWithImages[]> {
+  let builder = supabase
+    .from("listings")
+    .select(LISTING_WITH_IMAGES_SELECT)
+    .eq("status", "active");
+
+  if (category) {
+    builder = builder.eq("category", category);
+  }
+
+  const term = query ? sanitizeSearchTerm(query) : "";
+  if (term.length > 0) {
+    builder = builder.or(
+      `title.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`
+    );
+  }
+
+  const { data, error } = await builder
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw error;
+  return (data as ListingWithImages[] | null) ?? [];
+}
+
 /**
  * Fetch all listings owned by a seller (with their images), newest first
  * (design §4.2 Profile; Req 7.2). Unlike the feed this is NOT restricted to
