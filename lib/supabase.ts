@@ -42,6 +42,21 @@ if (__DEV__) {
   }
 }
 
+// TODO(dev-diagnostics): remove once feed 401 is resolved.
+if (__DEV__) {
+  const k = SUPABASE_ANON_KEY;
+  const looksLegacyJwt = k.startsWith("eyJ") && k.length > 100;
+  const looksPublishable = k.startsWith("sb_publishable_");
+  if (!looksLegacyJwt && !looksPublishable) {
+    console.warn(
+      `[supabase] EXPO_PUBLIC_SUPABASE_ANON_KEY looks INVALID (len ${k.length}). ` +
+        "A valid legacy anon key is a JWT (~200+ chars, starts 'eyJ'); the new key starts 'sb_publishable_'. " +
+        "A wrong/truncated key → 401 on every request. Copy the exact 'anon public' key from " +
+        "Supabase → Project Settings → API, matching your EXPO_PUBLIC_SUPABASE_URL project, then `npx expo start -c`."
+    );
+  }
+}
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: secureStoreAdapter,

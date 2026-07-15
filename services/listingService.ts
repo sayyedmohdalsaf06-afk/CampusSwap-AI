@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+// TODO(dev-diagnostics): remove once feed 401 is resolved.
+import { SUPABASE_URL } from "@/lib/env";
 import type { ListingType, ListingWithImages } from "@/types";
 
 /**
@@ -45,6 +47,26 @@ export async function fetchFeedPage({
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  // TODO(dev-diagnostics): remove once feed 401 is resolved.
+  if (__DEV__) {
+    console.log(
+      "[feed] GET",
+      `${SUPABASE_URL}/rest/v1/listings?status=eq.active&select=...`
+    );
+    if (error) {
+      console.error("[feed] query failed:", JSON.stringify(error, null, 2));
+      console.error("[feed] error.code:", (error as any).code);
+      console.error("[feed] error.message:", error.message);
+      console.error("[feed] error.details:", (error as any).details);
+      console.error("[feed] error.hint:", (error as any).hint);
+      if ("status" in (error as any)) {
+        console.error("[feed] error.status:", (error as any).status);
+      }
+    } else {
+      console.log("[feed] rows:", data?.length ?? 0);
+    }
+  }
 
   if (error) throw error;
   return (data as ListingWithImages[] | null) ?? [];
