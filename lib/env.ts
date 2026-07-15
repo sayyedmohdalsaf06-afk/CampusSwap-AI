@@ -22,6 +22,14 @@ export const isDemo = APP_ENV === "demo";
 export const DEMO_EMAIL = process.env.EXPO_PUBLIC_DEMO_EMAIL ?? "";
 export const DEMO_PASSWORD = process.env.EXPO_PUBLIC_DEMO_PASSWORD ?? "";
 
+/**
+ * DEV-ONLY, routing-only auth bypass flag. When `EXPO_PUBLIC_SKIP_AUTH=true`,
+ * the auth ROUTING gate is skipped so authenticated UI can be tested while auth
+ * is paused. It does NOT mock a user/session/profile and MUST be removed before
+ * production. Defaults to false when unset.
+ */
+export const SKIP_AUTH = process.env.EXPO_PUBLIC_SKIP_AUTH === "true";
+
 export const env = {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,

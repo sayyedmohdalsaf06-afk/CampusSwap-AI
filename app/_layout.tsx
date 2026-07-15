@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { queryClient } from "@/lib/queryClient";
+import { SKIP_AUTH } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
 import { fetchProfile } from "@/services/authService";
 import { useAuthStore } from "@/stores/authStore";
@@ -40,6 +41,16 @@ function useAuthGate() {
   const router = useRouter();
 
   useEffect(() => {
+    // ─── TODO(auth): DEV-ONLY AUTH BYPASS (EXPO_PUBLIC_SKIP_AUTH=true) — REMOVE ───
+    // Routing-only: lets us test authenticated UI while auth is paused. It does
+    // NOT mock a user, touch auth services, or alter the auth store — screens
+    // that read `profile` simply render their existing null-profile states.
+    if (SKIP_AUTH) {
+      if (segments[0] === "(auth)") router.replace("/");
+      return;
+    }
+    // ─── end DEV-ONLY AUTH BYPASS ───
+
     if (status === "loading") return;
 
     const inAuthGroup = segments[0] === "(auth)";
@@ -100,7 +111,8 @@ function RootNavigator() {
   const status = useAuthStore((s) => s.status);
 
   // Splash while hydrating — avoids showing the wrong screen (Req 2.1 gating).
-  if (status === "loading") {
+  // TODO(auth): part of the dev bypass — REMOVE
+  if (status === "loading" && !SKIP_AUTH) {
     return <View className="flex-1 bg-white" />;
   }
 
