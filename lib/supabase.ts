@@ -1,19 +1,30 @@
 import "react-native-url-polyfill/auto";
-import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./env";
 
 /**
- * expo-secure-store-backed storage adapter for Supabase Auth session
- * persistence. Keeps the JWT session in the device keychain/keystore rather
- * than plain AsyncStorage.
+ * Platform-aware Supabase Auth session storage.
+ *
+ * Why NOT expo-secure-store:
+ *  - SecureStore does NOT exist on web, so web sessions were never persisted
+ *    or restored (users were signed out on every reload).
+ *  - SecureStore also enforces a ~2KB per-item limit; a full Supabase session
+ *    (access + refresh JWTs + user object) can exceed it and get truncated,
+ *    silently corrupting the persisted session on native too.
+ *
+ * Strategy:
+ *  - Native (iOS/Android): @react-native-async-storage/async-storage — no size
+ *    cap, the storage adapter Supabase officially recommends for React Native.
+ *  - Web: leave `storage` undefined so supabase-js falls back to its built-in
+ *    localStorage adapter (and pairs with detectSessionInUrl for magic links).
  */
-const secureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
-};
+// Inferred type: `typeof AsyncStorage | undefined`. AsyncStorage structurally
+// satisfies supabase-js's `SupportedStorage` (getItem/setItem/removeItem), and
+// `undefined` selects the built-in localStorage adapter on web.
+const authStorage = Platform.OS === "web" ? undefined : AsyncStorage;
 
 /**
  * Shared Supabase client instance.
@@ -59,9 +70,13 @@ if (__DEV__) {
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: secureStoreAdapter,
+    // Native → AsyncStorage; web → undefined (supabase-js default localStorage).
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // Web needs URL detection so the magic-link callback (#access_token=… /
+    // ?code=…) is parsed automatically on load. Native handles the deep-link
+    // exchange explicitly in app/(auth)/callback.tsx.
+    detectSessionInUrl: Platform.OS === "web",
   },
 });

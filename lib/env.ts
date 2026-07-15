@@ -23,10 +23,11 @@ export const DEMO_EMAIL = process.env.EXPO_PUBLIC_DEMO_EMAIL ?? "";
 export const DEMO_PASSWORD = process.env.EXPO_PUBLIC_DEMO_PASSWORD ?? "";
 
 /**
- * DEV-ONLY, routing-only auth bypass flag. When `EXPO_PUBLIC_SKIP_AUTH=true`,
- * the auth ROUTING gate is skipped so authenticated UI can be tested while auth
- * is paused. It does NOT mock a user/session/profile and MUST be removed before
- * production. Defaults to false when unset.
+ * @deprecated dev bypass, unused. Nothing branches on this at runtime anymore —
+ * the auth ROUTING gate always runs (see app/_layout.tsx). Kept only so any
+ * lingering references resolve; safe to delete once no code reads it. When it
+ * was active (`EXPO_PUBLIC_SKIP_AUTH=true`) it skipped the routing gate to test
+ * authenticated UI; it never mocked a user/session/profile.
  */
 export const SKIP_AUTH = process.env.EXPO_PUBLIC_SKIP_AUTH === "true";
 

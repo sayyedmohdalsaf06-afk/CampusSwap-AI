@@ -8,32 +8,21 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { queryClient } from "@/lib/queryClient";
-import { SKIP_AUTH } from "@/lib/env";
+// NOTE: EXPO_PUBLIC_SKIP_AUTH is intentionally NOT imported/branched on at
+// runtime anymore (deprecated dev bypass). See the commented DEV-ONLY block in
+// useAuthGate() if you need to temporarily re-enable it.
 import { supabase } from "@/lib/supabase";
 import { fetchProfile } from "@/services/authService";
-import { useAuthStore } from "@/stores/authStore";
-import type { AuthStatus, Profile } from "@/types";
+import { deriveStatus, useAuthStore } from "@/stores/authStore";
 
 /**
- * Derive the auth-gate status from the current session + profile.
- *  - no session            → unauthenticated
- *  - session, verified     → authenticated
- *  - session, not verified → unverified (e.g. unsupported campus domain, Req 1.2)
- */
-function deriveStatus(
-  hasSession: boolean,
-  profile: Profile | null
-): AuthStatus {
-  if (!hasSession) return "unauthenticated";
-  if (profile?.verified_student) return "authenticated";
-  return "unverified";
-}
-
-/**
- * Auth gate (design §4.2, task 4.3). Redirects based on auth status:
- *  - while `loading` → render nothing (splash)
- *  - unauthenticated / unverified → force into the (auth) group
- *  - authenticated + currently in (auth) → send to the app shell (`/`)
+ * Auth gate (design §4.2, Req 2.1, Req 6). Redirects based on auth status:
+ *  - `loading`        → render nothing (splash)
+ *  - `unauthenticated`→ force into the (auth) group at /(auth)/email
+ *  - `onboarding`     → session but incomplete/unverified profile → /(auth)/onboarding
+ *                       (e.g. no profile row yet, no campus_id, or unsupported
+ *                       campus domain, Req 1.2)
+ *  - `authenticated`  → verified student with a campus → app shell (`/`)
  */
 function useAuthGate() {
   const status = useAuthStore((s) => s.status);
@@ -41,25 +30,41 @@ function useAuthGate() {
   const router = useRouter();
 
   useEffect(() => {
-    // ─── TODO(auth): DEV-ONLY AUTH BYPASS (EXPO_PUBLIC_SKIP_AUTH=true) — REMOVE ───
-    // Routing-only: lets us test authenticated UI while auth is paused. It does
-    // NOT mock a user, touch auth services, or alter the auth store — screens
-    // that read `profile` simply render their existing null-profile states.
-    if (SKIP_AUTH) {
-      if (segments[0] === "(auth)") router.replace("/");
-      return;
+    /* ─── DEV-ONLY AUTH BYPASS (deprecated; disabled) ──────────────────────
+     * Historically gated on EXPO_PUBLIC_SKIP_AUTH to test authenticated UI
+     * while auth was paused. It is intentionally DISABLED — nothing branches
+     * on SKIP_AUTH at runtime. To re-enable manually, uncomment this block and
+     * re-import SKIP_AUTH from "@/lib/env":
+     *
+     *   if (SKIP_AUTH) {
+     *     if (segments[0] === "(auth)") router.replace("/");
+     *     return;
+     *   }
+     * ──────────────────────────────────────────────────────────────────── */
+
+    if (__DEV__) {
+      console.log("[authGate] status:", status, "segments:", segments.join("/") || "(root)");
     }
-    // ─── end DEV-ONLY AUTH BYPASS ───
 
     if (status === "loading") return;
 
     const inAuthGroup = segments[0] === "(auth)";
 
-    if (status === "authenticated") {
-      if (inAuthGroup) router.replace("/");
-    } else {
-      // unauthenticated OR unverified → gate to the email screen.
+    if (status === "unauthenticated") {
       if (!inAuthGroup) router.replace("/(auth)/email");
+      return;
+    }
+
+    if (status === "onboarding" || status === "unverified") {
+      // Session exists but the profile isn't a complete Verified_Student yet.
+      const onOnboarding = segments[0] === "(auth)" && segments[1] === "onboarding";
+      if (!onOnboarding) router.replace("/(auth)/onboarding");
+      return;
+    }
+
+    // authenticated → leave the (auth) group for the app shell.
+    if (status === "authenticated" && inAuthGroup) {
+      router.replace("/");
     }
   }, [status, segments, router]);
 }
@@ -71,30 +76,52 @@ function useHydrateAuth() {
   useEffect(() => {
     let active = true;
 
-    async function syncFromSession(hasSession: boolean) {
+    async function syncFromSession(hasSession: boolean, userId: string | null) {
+      if (__DEV__) {
+        console.log("[auth] syncFromSession: hasSession=", hasSession, "userId=", userId);
+      }
       const profile = hasSession ? await fetchProfile() : null;
       if (!active) return;
+      if (__DEV__) {
+        console.log("[auth] syncFromSession: profile loaded", {
+          hasProfile: profile != null,
+          campusId: profile?.campus_id ?? null,
+          verifiedStudent: profile?.verified_student ?? false,
+        });
+      }
       setProfile(profile);
       setStatus(deriveStatus(hasSession, profile));
     }
 
-    // Initial hydration from the persisted (secure-store) session.
+    // Initial hydration from the persisted session (AsyncStorage / localStorage).
     (async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (!active) return;
+      if (__DEV__) {
+        console.log("[auth] initial getSession:", {
+          hasSession: session != null,
+          userId: session?.user?.id ?? null,
+        });
+      }
       setSession(session);
-      await syncFromSession(session != null);
+      await syncFromSession(session != null, session?.user?.id ?? null);
     })();
 
-    // React to sign-in / sign-out / token refresh.
+    // React to sign-in / sign-out / token refresh / magic-link callback.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (__DEV__) {
+        console.log("[auth] onAuthStateChange:", event, {
+          hasSession: session != null,
+          userId: session?.user?.id ?? null,
+        });
+      }
       setSession(session);
       setStatus("loading");
-      void syncFromSession(session != null);
+      void syncFromSession(session != null, session?.user?.id ?? null);
     });
 
     return () => {
@@ -111,8 +138,7 @@ function RootNavigator() {
   const status = useAuthStore((s) => s.status);
 
   // Splash while hydrating — avoids showing the wrong screen (Req 2.1 gating).
-  // TODO(auth): part of the dev bypass — REMOVE
-  if (status === "loading" && !SKIP_AUTH) {
+  if (status === "loading") {
     return <View className="flex-1 bg-white" />;
   }
 
@@ -120,8 +146,7 @@ function RootNavigator() {
 }
 
 /**
- * Root layout. Providers + auth gate. Feature screens are added by later tasks
- * — this only wires session hydration and routing.
+ * Root layout. Providers + auth gate. Wires session hydration and routing.
  */
 export default function RootLayout() {
   return (

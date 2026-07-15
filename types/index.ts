@@ -25,13 +25,18 @@ export type Profile = {
  * Auth gate status derived from the session + profile:
  *  - `loading`         — session/profile hydration in flight (show splash)
  *  - `unauthenticated` — no active Supabase session
- *  - `unverified`      — session exists but the profile is not a Verified_Student
- *                        (e.g. unsupported campus domain, Req 1.2)
- *  - `authenticated`   — session + verified_student profile (full access)
+ *  - `onboarding`      — session exists but the profile is INCOMPLETE: no profile
+ *                        row yet, no `campus_id`, or `verified_student` is false
+ *                        (e.g. unsupported campus domain, Req 1.2). Routed to the
+ *                        onboarding screen.
+ *  - `unverified`      — DEPRECATED alias of the incomplete-profile state, kept
+ *                        for backward compatibility; new code uses `onboarding`.
+ *  - `authenticated`   — session + verified_student profile with a campus (full access)
  */
 export type AuthStatus =
   | "loading"
   | "unauthenticated"
+  | "onboarding"
   | "unverified"
   | "authenticated";
 

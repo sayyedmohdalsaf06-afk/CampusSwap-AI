@@ -16,6 +16,7 @@ import {
   demoSignIn,
   isCampusSupported,
   requestOtp,
+  sendMagicLink,
 } from "@/services/authService";
 
 const emailSchema = z.object({
@@ -36,11 +37,14 @@ type EmailForm = z.infer<typeof emailSchema>;
 export default function EmailScreen() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [magicSending, setMagicSending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<EmailForm>({
     resolver: zodResolver(emailSchema),
@@ -48,9 +52,10 @@ export default function EmailScreen() {
   });
 
   async function onSubmit({ email }: EmailForm) {
-    if (submitting) return; // duplicate-submission guard (Req 10.3)
+    if (submitting || magicSending) return; // duplicate-submission guard (Req 10.3)
     setSubmitting(true);
     setFormError(null);
+    setNotice(null);
     try {
       const supported = await isCampusSupported(email);
       if (!supported) {
@@ -71,10 +76,42 @@ export default function EmailScreen() {
     }
   }
 
+  /**
+   * Fallback path (Req 1.3, 10.1): when email OTP delivery is flaky, send a
+   * clickable magic sign-in link instead. Runs the SAME campus-supported check
+   * (Req 1.2) before sending, then shows a "check your email" confirmation.
+   */
+  async function onMagicLink() {
+    if (submitting || magicSending) return; // duplicate-submission guard (Req 10.3)
+    const email = getValues("email").trim();
+    const parsed = emailSchema.safeParse({ email });
+    if (!parsed.success) {
+      setFormError("Enter a valid email address first.");
+      return;
+    }
+    setMagicSending(true);
+    setFormError(null);
+    setNotice(null);
+    try {
+      const supported = await isCampusSupported(email);
+      if (!supported) {
+        setFormError("This campus isn't supported yet.");
+        return;
+      }
+      await sendMagicLink(email);
+      setNotice(`Check your email — we sent a sign-in link to ${email.toLowerCase()}.`);
+    } catch {
+      setFormError("We couldn't send your sign-in link. Please try again.");
+    } finally {
+      setMagicSending(false);
+    }
+  }
+
   async function onDemo() {
-    if (submitting) return;
+    if (submitting || magicSending) return;
     setSubmitting(true);
     setFormError(null);
+    setNotice(null);
     try {
       await demoSignIn(); // auth gate routes into the app on success
     } catch {
@@ -118,11 +155,14 @@ export default function EmailScreen() {
         {formError ? (
           <Text className="mt-2 text-sm text-red-600">{formError}</Text>
         ) : null}
+        {notice ? (
+          <Text className="mt-2 text-sm text-green-700">{notice}</Text>
+        ) : null}
       </View>
 
       <Pressable
         className="mt-6 items-center rounded-lg bg-gray-900 py-3 active:opacity-80"
-        disabled={submitting}
+        disabled={submitting || magicSending}
         onPress={handleSubmit(onSubmit)}
       >
         {submitting ? (
@@ -134,10 +174,26 @@ export default function EmailScreen() {
         )}
       </Pressable>
 
+      <Pressable
+        className="mt-3 items-center py-3 active:opacity-60"
+        disabled={submitting || magicSending}
+        onPress={onMagicLink}
+        accessibilityRole="button"
+        accessibilityLabel="Email me a sign-in link instead"
+      >
+        {magicSending ? (
+          <ActivityIndicator color="#111827" />
+        ) : (
+          <Text className="text-base font-medium text-gray-700">
+            Email me a sign-in link instead
+          </Text>
+        )}
+      </Pressable>
+
       {isDemo ? (
         <Pressable
           className="mt-3 items-center rounded-lg border border-gray-300 py-3 active:opacity-80"
-          disabled={submitting}
+          disabled={submitting || magicSending}
           onPress={onDemo}
         >
           <Text className="text-base font-semibold text-gray-900">
