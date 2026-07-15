@@ -6,7 +6,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { LogOut } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { LogOut, Plus } from "lucide-react-native";
 
 import { ListingCard } from "@/components/ListingCard";
 import { flattenFeed, useFeed } from "@/hooks/useListings";
@@ -25,6 +26,7 @@ import { useAuthStore } from "@/stores/authStore";
  * removed in favor of this route serving "/".
  */
 export default function FeedScreen() {
+  const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const reset = useAuthStore((s) => s.reset);
 
@@ -80,17 +82,28 @@ export default function FeedScreen() {
             {campusName ?? "CampusSwap"}
           </Text>
         </View>
-        <Pressable
-          className="flex-row items-center rounded-lg border border-gray-300 px-3 py-2 active:opacity-70"
-          onPress={onSignOut}
-          accessibilityRole="button"
-          accessibilityLabel="Sign out"
-        >
-          <LogOut size={16} color="#111827" />
-          <Text className="ml-1.5 text-sm font-semibold text-gray-900">
-            Sign out
-          </Text>
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          {/* Create-listing entry point (design §4.2 → listing/create). */}
+          <Pressable
+            className="h-10 w-10 items-center justify-center rounded-full bg-gray-900 active:opacity-80"
+            onPress={() => router.push("/listing/create")}
+            accessibilityRole="button"
+            accessibilityLabel="Create a listing"
+          >
+            <Plus size={20} color="#ffffff" />
+          </Pressable>
+          <Pressable
+            className="flex-row items-center rounded-lg border border-gray-300 px-3 py-2 active:opacity-70"
+            onPress={onSignOut}
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+          >
+            <LogOut size={16} color="#111827" />
+            <Text className="ml-1.5 text-sm font-semibold text-gray-900">
+              Sign out
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <FeedBody
