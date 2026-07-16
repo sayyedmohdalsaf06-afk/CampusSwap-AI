@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { Leaf, Settings, Sparkles } from "lucide-react-native";
+import type { ReactNode } from "react";
+import {
+  ChevronRight,
+  ClipboardList,
+  Heart,
+  Leaf,
+  Settings,
+  Sparkles,
+} from "lucide-react-native";
 
 import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
@@ -177,6 +185,22 @@ function ProfileContent({ profile }: { profile: Profile }) {
             />
           </View>
 
+          {/* Quick actions — entry points to the frontend My Reservations +
+              Wishlist stack routes. */}
+          <View className="pb-5">
+            <QuickAction
+              icon={<ClipboardList size={18} color={colors.primaryDark} />}
+              label="My Reservations"
+              onPress={() => router.push("/reservations")}
+            />
+            <View className="h-3" />
+            <QuickAction
+              icon={<Heart size={18} color={colors.primaryDark} />}
+              label="Wishlist"
+              onPress={() => router.push("/wishlist")}
+            />
+          </View>
+
           {/* My listings heading (Req 7.2) */}
           <Text className="pb-3 text-lg font-jakartaBold text-ink">
             My listings
@@ -243,6 +267,33 @@ function MyListingsBody({
       subtitle="Tap below to list your first item and start swapping."
       action={{ label: "Create a listing", onPress: onCreate }}
     />
+  );
+}
+
+type QuickActionProps = {
+  icon: ReactNode;
+  label: string;
+  onPress: () => void;
+};
+
+/** Rounded surface row with a leading icon, label, and trailing chevron. */
+function QuickAction({ icon, label, onPress }: QuickActionProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={shadows.soft}
+      className="flex-row items-center rounded-2xl bg-surface px-4 py-3.5 active:opacity-80"
+    >
+      <View className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-green-50">
+        {icon}
+      </View>
+      <Text className="text-sm font-jakartaSemibold text-ink">{label}</Text>
+      <View className="ml-auto">
+        <ChevronRight size={20} color={colors.subtle} />
+      </View>
+    </Pressable>
   );
 }
 

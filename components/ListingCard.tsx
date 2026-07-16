@@ -1,10 +1,11 @@
 import { Image, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Gift, ImageOff } from "lucide-react-native";
+import { Gift, Heart, ImageOff } from "lucide-react-native";
 
 import { Button } from "@/components/Button";
 import { getListingImageUrl } from "@/lib/storage";
 import { colors, shadows } from "@/lib/theme";
+import { useWishlistStore } from "@/stores/wishlistStore";
 import type { ListingImage, ListingWithImages } from "@/types";
 
 /**
@@ -46,6 +47,12 @@ export function ListingCard({ listing, onPress, onReserve }: ListingCardProps) {
   const cover = primaryImage(listing.listing_images);
   const isDonate = listing.listing_type === "donate";
 
+  // Local-only wishlist state (frontend persistence via AsyncStorage). Reading
+  // the store here keeps the existing ListingCard props unchanged — the heart
+  // overlay is self-contained and does not affect tap-to-detail / reserve.
+  const saved = useWishlistStore((s) => s.ids.includes(listing.id));
+  const toggleWishlist = useWishlistStore((s) => s.toggle);
+
   const handlePress =
     onPress ?? (() => router.push(`/listing/${listing.id}`));
 
@@ -73,6 +80,27 @@ export function ListingCard({ listing, onPress, onReserve }: ListingCardProps) {
             <Text className="mt-1 text-xs font-jakarta text-subtle">No photo</Text>
           </View>
         )}
+
+        {/* Wishlist heart overlay (top-right). Its own Pressable stops the
+            press from bubbling to the card, so tapping the heart toggles the
+            local wishlist WITHOUT navigating to the detail screen. */}
+        <Pressable
+          onPress={() => toggleWishlist(listing.id)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={
+            saved ? `Remove ${listing.title} from wishlist` : `Save ${listing.title} to wishlist`
+          }
+          accessibilityState={{ selected: saved }}
+          style={shadows.soft}
+          className="absolute right-2.5 top-2.5 h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-80"
+        >
+          <Heart
+            size={18}
+            color={saved ? colors.primary : colors.muted}
+            fill={saved ? colors.primary : "transparent"}
+          />
+        </Pressable>
       </View>
 
       <View className="p-4">

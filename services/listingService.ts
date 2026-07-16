@@ -165,6 +165,31 @@ export async function fetchMyListings(
 }
 
 /**
+ * Fetch a set of listings (with their images) by id, for the (local, frontend
+ * only) Wishlist screen. READ-ONLY and additive — mirrors the feed/detail read
+ * shape via `LISTING_WITH_IMAGES_SELECT`.
+ *
+ * Uses PostgREST `in(...)` to fetch only the requested ids. Any id that is not
+ * visible to the caller under RLS (e.g. a different campus, or a removed
+ * listing) simply does not come back — the Wishlist UI renders whatever is
+ * returned. Returns an empty array for an empty id list without a round-trip.
+ */
+export async function fetchListingsByIds(
+  ids: string[]
+): Promise<ListingWithImages[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_WITH_IMAGES_SELECT)
+    .in("id", ids)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as ListingWithImages[] | null) ?? [];
+}
+
+/**
  * Fetch a single listing (with its images) by id, or null when it does not
  * exist / is not visible to the caller under RLS (Req 4.6, 2.2).
  */

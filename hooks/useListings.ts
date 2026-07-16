@@ -7,6 +7,7 @@ import {
 import {
   fetchFeedPage,
   fetchListingById,
+  fetchListingsByIds,
   fetchMyListings,
   searchListings,
 } from "@/services/listingService";
@@ -81,6 +82,20 @@ export function useSearchListings(query: string, category: string | null) {
     queryKey: ["search", query, category],
     queryFn: () => searchListings({ query, category }),
     staleTime: 30_000,
+  });
+}
+
+/**
+ * Listings looked up by a set of ids for the (local, frontend-only) Wishlist
+ * screen. Disabled while the id list is empty so an empty wishlist never issues
+ * a query. The query key includes the ids so the cache updates as the wishlist
+ * changes. Listings hidden by RLS simply won't be returned (Req 2.2, 4.6).
+ */
+export function useListingsByIds(ids: string[]) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["listings-by-ids", ids],
+    queryFn: () => fetchListingsByIds(ids),
+    enabled: ids.length > 0,
   });
 }
 

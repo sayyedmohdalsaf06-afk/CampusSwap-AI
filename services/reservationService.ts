@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import type { ActiveReservation, ReservationOutcome } from "@/types";
+import type {
+  ActiveReservation,
+  MyReservation,
+  ReservationOutcome,
+} from "@/types";
 
 /**
  * Reservation service — thin, typed wrapper over `lib/supabase.ts` for the
@@ -25,6 +29,15 @@ const UNIQUE_VIOLATION = "23505";
  */
 const ACTIVE_RESERVATION_SELECT =
   "id, listing_id, buyer_id, campus_id, status, created_at, buyer:profiles!buyer_id(display_name, email)";
+
+/**
+ * PostgREST select expression for a buyer's own reservation with its related
+ * listing (and that listing's `listing_images`) embedded. The embedded listing
+ * shape mirrors `listingService`'s listings-with-images select so the My
+ * Reservations screen can render each listing with the shared `ListingCard`.
+ */
+const MY_RESERVATION_SELECT =
+  "id, status, created_at, listing:listings(*, listing_images(id, listing_id, storage_path, display_order))";
 
 /**
  * Input for reserving a listing (design §1.6 Flow 6; Req 13.1–13.3, 13.8).
@@ -156,4 +169,31 @@ export async function fetchActiveReservation(
 
   if (error) throw error;
   return (data as ActiveReservation | null) ?? null;
+}
+
+/**
+ * Fetch the current buyer's own reservations (newest first) with each related
+ * listing + its images embedded, for the My Reservations screen. READ-ONLY and
+ * additive — it performs no writes and changes no lifecycle state.
+ *
+ * Access is scoped server-side: the reservations SELECT RLS policy already
+ * exposes a buyer their own rows (`buyer_id = auth.uid()`), so we simply filter
+ * by `buyer_id` and rely on RLS for enforcement. A reservation whose listing is
+ * hidden by RLS (or removed) comes back with `listing = null`; the UI skips it.
+ *
+ * // TODO(auth): `buyerId` originates from the CURRENT authenticated user's
+ * // profile (`useAuthStore().profile.id`); it must match the signed-in caller
+ * // for RLS to return rows.
+ */
+export async function fetchMyReservations(
+  buyerId: string
+): Promise<MyReservation[]> {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select(MY_RESERVATION_SELECT)
+    .eq("buyer_id", buyerId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as MyReservation[] | null) ?? [];
 }

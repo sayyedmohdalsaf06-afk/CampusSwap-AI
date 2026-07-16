@@ -128,6 +128,21 @@ export type Reservation = {
 };
 
 /**
+ * A buyer's own reservation with its related listing (and that listing's
+ * images) embedded — the PostgREST embedded-relationship shape returned by
+ * `reservationService.fetchMyReservations` and rendered by the My Reservations
+ * screen. Read-only: RLS already exposes a buyer's own reservation rows to them
+ * (design §1.5). `listing` is null when the related row is hidden by RLS or has
+ * been removed, in which case the UI skips the item.
+ */
+export type MyReservation = {
+  id: string;
+  status: ReservationStatus;
+  created_at: string;
+  listing: ListingWithImages | null;
+};
+
+/**
  * The active reservation for a listing with its buyer profile embedded (the
  * PostgREST embedded-relationship shape returned by
  * `reservationService.fetchActiveReservation`). Used by the listing detail to

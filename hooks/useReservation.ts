@@ -3,12 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   completeReservation,
   fetchActiveReservation,
+  fetchMyReservations,
   releaseReservation,
   reserveListing,
   type CompleteReservationInput,
   type ReserveListingInput,
 } from "@/services/reservationService";
-import type { ActiveReservation } from "@/types";
+import type { ActiveReservation, MyReservation } from "@/types";
 
 /**
  * Reservation hooks (design §1.6 Flow 6; Req 13.1–13.8). A read hook for the
@@ -29,6 +30,20 @@ export function useActiveReservation(listingId: string | undefined) {
     queryKey: ["reservation", listingId],
     queryFn: () => fetchActiveReservation(listingId as string),
     enabled: Boolean(listingId),
+  });
+}
+
+/**
+ * The current buyer's own reservations for the My Reservations screen (read
+ * query). Disabled until a `buyerId` is available (e.g. while the auth profile
+ * hydrates) so we never query with an undefined buyer. Each row embeds its
+ * related listing + images so the screen can render with `ListingCard`.
+ */
+export function useMyReservations(buyerId: string | undefined) {
+  return useQuery<MyReservation[], Error>({
+    queryKey: ["my-reservations", buyerId],
+    queryFn: () => fetchMyReservations(buyerId as string),
+    enabled: Boolean(buyerId),
   });
 }
 
