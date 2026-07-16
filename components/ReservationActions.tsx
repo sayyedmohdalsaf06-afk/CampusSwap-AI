@@ -7,13 +7,14 @@ import {
   UserCheck,
 } from "lucide-react-native";
 
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { Button } from "@/components/Button";
 import {
   useActiveReservation,
   useComplete,
   useRelease,
   useReserve,
 } from "@/hooks/useReservation";
+import { colors, shadows } from "@/lib/theme";
 import { useAuthStore } from "@/stores/authStore";
 import type { ListingWithImages } from "@/types";
 
@@ -39,10 +40,13 @@ type ReservationActionsProps = {
   listing: ListingWithImages;
 };
 
-/** Small rounded info panel wrapper for a status/message block. */
+/** Soft rounded info panel wrapper for a status/message block. */
 function InfoPanel({ children }: { children: React.ReactNode }) {
   return (
-    <View className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+    <View
+      style={shadows.soft}
+      className="rounded-2xl border border-borderLight bg-surface p-4"
+    >
       {children}
     </View>
   );
@@ -51,7 +55,7 @@ function InfoPanel({ children }: { children: React.ReactNode }) {
 /** The always-on "coordinate offline" note (facilitate-only, Req 13.4, 5.3). */
 function OfflineNote() {
   return (
-    <Text className="mt-3 text-xs leading-5 text-gray-400">
+    <Text className="mt-3 text-xs leading-5 font-jakarta text-subtle">
       No payments in-app — reserving only signals pickup intent. Arrange the
       handoff offline.
     </Text>
@@ -61,6 +65,15 @@ function OfflineNote() {
 /** Extract a user-facing message from a mutation error (e.g. "already reserved"). */
 function errorMessage(error: Error | null): string | null {
   return error ? error.message : null;
+}
+
+/** Danger-colored error line for a failed mutation (Req 10.3). */
+function ErrorText({ children }: { children: string }) {
+  return (
+    <Text className="text-sm font-jakartaMedium text-danger-text">
+      {children}
+    </Text>
+  );
 }
 
 export function ReservationActions({ listing }: ReservationActionsProps) {
@@ -77,15 +90,15 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
   // ── Unauthenticated / no profile: guidance only, never crash (TODO(auth)) ──
   if (!profile) {
     return (
-      <View className="border-t border-gray-100 px-5 pt-5">
+      <View className="border-t border-borderLight px-5 pt-5">
         <InfoPanel>
           <View className="flex-row items-center">
-            <Lock size={18} color="#6b7280" />
-            <Text className="ml-2 text-sm font-medium text-gray-600">
+            <Lock size={18} color={colors.muted} />
+            <Text className="ml-2 text-sm font-jakartaSemibold text-muted">
               Sign in to reserve
             </Text>
           </View>
-          <Text className="mt-1 text-xs leading-5 text-gray-400">
+          <Text className="mt-1 text-xs leading-5 font-jakarta text-subtle">
             Verify your campus email to reserve items and coordinate pickup.
           </Text>
         </InfoPanel>
@@ -105,19 +118,19 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
   const completeError = errorMessage(complete.error);
 
   return (
-    <View className="border-t border-gray-100 px-5 pt-5">
+    <View className="border-t border-borderLight px-5 pt-5">
       {/* ─────────────────────────── SELLER VIEW ─────────────────────────── */}
       {isSeller ? (
         <>
           {status === "active" ? (
             <InfoPanel>
               <View className="flex-row items-center">
-                <Clock size={18} color="#6b7280" />
-                <Text className="ml-2 text-sm font-medium text-gray-600">
+                <Clock size={18} color={colors.muted} />
+                <Text className="ml-2 text-sm font-jakartaSemibold text-muted">
                   Waiting for a buyer to reserve
                 </Text>
               </View>
-              <Text className="mt-1 text-xs leading-5 text-gray-400">
+              <Text className="mt-1 text-xs leading-5 font-jakarta text-subtle">
                 Your item is live in the campus feed.
               </Text>
             </InfoPanel>
@@ -127,25 +140,27 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
             <View className="gap-3">
               <InfoPanel>
                 <View className="flex-row items-center">
-                  <UserCheck size={18} color="#b45309" />
-                  <Text className="ml-2 text-sm font-semibold text-amber-700">
+                  <UserCheck size={18} color={colors.amber.text} />
+                  <Text className="ml-2 text-sm font-jakartaSemibold text-amber-text">
                     Reserved
                   </Text>
                 </View>
-                <Text className="mt-1 text-sm text-gray-700">
+                <Text className="mt-1 text-sm font-jakarta text-ink">
                   {reservationLoading
                     ? "Loading reservation…"
                     : `Reserved by ${reserverLabel}`}
                 </Text>
               </InfoPanel>
 
-              <Text className="text-sm font-semibold text-gray-700">
+              <Text className="text-sm font-jakartaSemibold text-ink">
                 Complete the exchange
               </Text>
               <View className="flex-row gap-3">
                 <View className="flex-1">
-                  <PrimaryButton
+                  <Button
                     label="Mark as sold"
+                    size="lg"
+                    fullWidth
                     icon={<PackageCheck size={18} color="#ffffff" />}
                     loading={
                       complete.isPending &&
@@ -163,9 +178,11 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
                   />
                 </View>
                 <View className="flex-1">
-                  <PrimaryButton
+                  <Button
                     label="Mark as donated"
                     variant="outline"
+                    size="lg"
+                    fullWidth
                     loading={
                       complete.isPending &&
                       complete.variables?.outcome === "donated"
@@ -183,9 +200,11 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
                 </View>
               </View>
 
-              <PrimaryButton
+              <Button
                 label="Release reservation"
                 variant="outline"
+                size="lg"
+                fullWidth
                 loading={release.isPending}
                 disabled={!reservation || release.isPending}
                 onPress={() => {
@@ -197,12 +216,8 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
                 }}
               />
 
-              {completeError ? (
-                <Text className="text-sm text-red-600">{completeError}</Text>
-              ) : null}
-              {releaseError ? (
-                <Text className="text-sm text-red-600">{releaseError}</Text>
-              ) : null}
+              {completeError ? <ErrorText>{completeError}</ErrorText> : null}
+              {releaseError ? <ErrorText>{releaseError}</ErrorText> : null}
               <OfflineNote />
             </View>
           ) : null}
@@ -210,14 +225,12 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
           {status === "sold" || status === "donated" ? (
             <InfoPanel>
               <View className="flex-row items-center">
-                <CheckCircle2 size={18} color="#15803d" />
-                <Text className="ml-2 text-sm font-semibold text-green-700">
-                  {status === "sold"
-                    ? "Marked as sold"
-                    : "Marked as donated"}
+                <CheckCircle2 size={18} color={colors.green[600]} />
+                <Text className="ml-2 text-sm font-jakartaSemibold text-green-700">
+                  {status === "sold" ? "Marked as sold" : "Marked as donated"}
                 </Text>
               </View>
-              <Text className="mt-1 text-xs leading-5 text-gray-400">
+              <Text className="mt-1 text-xs leading-5 font-jakarta text-subtle">
                 This listing is closed. The conversation is preserved.
               </Text>
             </InfoPanel>
@@ -228,8 +241,10 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
         <>
           {status === "active" ? (
             <View className="gap-2">
-              <PrimaryButton
+              <Button
                 label="Reserve"
+                size="lg"
+                fullWidth
                 loading={reserve.isPending}
                 disabled={reserve.isPending}
                 onPress={() =>
@@ -242,9 +257,7 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
                   })
                 }
               />
-              {reserveError ? (
-                <Text className="text-sm text-red-600">{reserveError}</Text>
-              ) : null}
+              {reserveError ? <ErrorText>{reserveError}</ErrorText> : null}
               <OfflineNote />
             </View>
           ) : null}
@@ -253,18 +266,20 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
             <View className="gap-3">
               <InfoPanel>
                 <View className="flex-row items-center">
-                  <CheckCircle2 size={18} color="#15803d" />
-                  <Text className="ml-2 text-sm font-semibold text-green-700">
+                  <CheckCircle2 size={18} color={colors.green[600]} />
+                  <Text className="ml-2 text-sm font-jakartaSemibold text-green-700">
                     You reserved this
                   </Text>
                 </View>
-                <Text className="mt-1 text-xs leading-5 text-gray-400">
+                <Text className="mt-1 text-xs leading-5 font-jakarta text-subtle">
                   Coordinate the handoff with the seller offline.
                 </Text>
               </InfoPanel>
-              <PrimaryButton
+              <Button
                 label="Release reservation"
                 variant="outline"
+                size="lg"
+                fullWidth
                 loading={release.isPending}
                 disabled={!reservation || release.isPending}
                 onPress={() => {
@@ -275,21 +290,19 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
                   });
                 }}
               />
-              {releaseError ? (
-                <Text className="text-sm text-red-600">{releaseError}</Text>
-              ) : null}
+              {releaseError ? <ErrorText>{releaseError}</ErrorText> : null}
             </View>
           ) : null}
 
           {status === "reserved" && !isOwnReservation ? (
             <InfoPanel>
               <View className="flex-row items-center">
-                <Lock size={18} color="#b45309" />
-                <Text className="ml-2 text-sm font-semibold text-amber-700">
+                <Lock size={18} color={colors.amber.text} />
+                <Text className="ml-2 text-sm font-jakartaSemibold text-amber-text">
                   Reserved
                 </Text>
               </View>
-              <Text className="mt-1 text-xs leading-5 text-gray-400">
+              <Text className="mt-1 text-xs leading-5 font-jakarta text-subtle">
                 Someone is already picking this up. Check back if it frees up.
               </Text>
             </InfoPanel>
@@ -298,12 +311,12 @@ export function ReservationActions({ listing }: ReservationActionsProps) {
           {status === "sold" || status === "donated" ? (
             <InfoPanel>
               <View className="flex-row items-center">
-                <Lock size={18} color="#6b7280" />
-                <Text className="ml-2 text-sm font-semibold text-gray-600">
+                <Lock size={18} color={colors.muted} />
+                <Text className="ml-2 text-sm font-jakartaSemibold text-muted">
                   No longer available
                 </Text>
               </View>
-              <Text className="mt-1 text-xs leading-5 text-gray-400">
+              <Text className="mt-1 text-xs leading-5 font-jakarta text-subtle">
                 This item has been {status}.
               </Text>
             </InfoPanel>
