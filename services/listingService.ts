@@ -165,6 +165,70 @@ export async function fetchMyListings(
 }
 
 /**
+ * Fetch a seller's ACTIVE listings (with their images), newest first — for the
+ * (frontend-only) public Seller Profile screen. READ-ONLY and additive.
+ *
+ * Unlike `fetchMyListings` (which returns the caller's own listings across all
+ * statuses) this is scoped to `status = 'active'` so a public visitor only sees
+ * listings that are still available. RLS keeps this campus-scoped (Req 2.2), so
+ * a seller from another campus simply returns no rows — the screen degrades to
+ * a friendly empty state.
+ */
+export async function fetchSellerListings(
+  sellerId: string
+): Promise<ListingWithImages[]> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_WITH_IMAGES_SELECT)
+    .eq("seller_id", sellerId)
+    .eq("status", "active")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as ListingWithImages[] | null) ?? [];
+}
+
+/**
+ * A best-effort public view of a seller's profile for the Seller Profile
+ * screen. Only the fields safe to surface publicly are selected.
+ */
+export type PublicProfile = {
+  id: string;
+  display_name: string | null;
+  points: number;
+  cumulative_carbon_g: number;
+};
+
+/**
+ * Best-effort fetch of a public-safe seller profile (name + impact). READ-ONLY
+ * and additive.
+ *
+ * NOTE: the current RLS policy may restrict `profiles` reads to the row owner,
+ * in which case this returns null for other sellers — the Seller Profile screen
+ * MUST handle null by falling back to a generic "Campus seller" header. Any
+ * error is swallowed to null so a restricted read never crashes the screen.
+ *
+ * // TODO(backend): expose a public-safe seller profile (name, impact, rating)
+ * // via a dedicated view or policy so this reliably returns cross-user data.
+ */
+export async function fetchPublicProfile(
+  id: string
+): Promise<PublicProfile | null> {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, display_name, points, cumulative_carbon_g")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) return null;
+    return (data as PublicProfile | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetch a set of listings (with their images) by id, for the (local, frontend
  * only) Wishlist screen. READ-ONLY and additive — mirrors the feed/detail read
  * shape via `LISTING_WITH_IMAGES_SELECT`.

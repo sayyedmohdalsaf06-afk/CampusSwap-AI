@@ -131,6 +131,7 @@ export default function FeedScreen() {
         isFetchingNextPage={isFetchingNextPage}
         onOpenSearch={() => router.push("/(tabs)/search")}
         onCreate={() => router.push("/listing/create")}
+        onOpenSustainability={() => router.push("/sustainability")}
       />
     </View>
   );
@@ -145,6 +146,7 @@ type FeedBodyProps = {
   isFetchingNextPage: boolean;
   onOpenSearch: () => void;
   onCreate: () => void;
+  onOpenSustainability: () => void;
 };
 
 /** Renders the loading / error / empty / list states for the feed. */
@@ -157,6 +159,7 @@ function FeedBody({
   isFetchingNextPage,
   onOpenSearch,
   onCreate,
+  onOpenSustainability,
 }: FeedBodyProps) {
   // The header block (search + hero banner + browse chips) is shared across the
   // loading and populated states so the chrome stays put while content loads.
@@ -169,28 +172,37 @@ function FeedBody({
         onPress={onOpenSearch}
       />
 
-      {/* Green eco hero banner (design-system gradient). */}
-      <LinearGradient
-        colors={gradients.greenBanner as unknown as [string, string, string]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[shadows.card, { borderRadius: 20 }]}
-        className="mt-4 overflow-hidden rounded-card p-5"
+      {/* Green eco hero banner (design-system gradient) — tappable → the
+          Sustainability dashboard. Visuals are unchanged; the Pressable just
+          adds a press affordance. */}
+      <Pressable
+        onPress={onOpenSustainability}
+        accessibilityRole="button"
+        accessibilityLabel="View your sustainability impact"
+        className="mt-4 active:opacity-90"
       >
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="text-lg font-jakartaExtrabold text-white">
-              Save the planet, one swap at a time
-            </Text>
-            <Text className="mt-1 text-sm font-jakarta text-white/85">
-              Every reused item keeps CO₂ out of the air. Swap, don't shop. 🌱
-            </Text>
+        <LinearGradient
+          colors={gradients.greenBanner as unknown as [string, string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[shadows.card, { borderRadius: 20 }]}
+          className="overflow-hidden rounded-card p-5"
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="text-lg font-jakartaExtrabold text-white">
+                Save the planet, one swap at a time
+              </Text>
+              <Text className="mt-1 text-sm font-jakarta text-white/85">
+                Every reused item keeps CO₂ out of the air. Swap, don't shop. 🌱
+              </Text>
+            </View>
+            <View className="h-14 w-14 items-center justify-center rounded-full bg-white/20">
+              <Leaf size={26} color="#ffffff" />
+            </View>
           </View>
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-white/20">
-            <Leaf size={26} color="#ffffff" />
-          </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </Pressable>
 
       {/* Horizontal browse chips → route to Search (filtering lives there). */}
       <View className="mt-4">

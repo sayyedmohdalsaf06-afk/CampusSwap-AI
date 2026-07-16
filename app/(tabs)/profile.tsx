@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
 import {
+  BarChart3,
   ChevronRight,
   ClipboardList,
   Heart,
@@ -205,6 +206,18 @@ function ProfileContent({ profile }: { profile: Profile }) {
               icon={<MessageCircle size={18} color={colors.primaryDark} />}
               label="Messages"
               onPress={() => router.push("/chat")}
+            />
+            <View className="h-3" />
+            <QuickAction
+              icon={<Leaf size={18} color={colors.primaryDark} />}
+              label="Sustainability"
+              onPress={() => router.push("/sustainability")}
+            />
+            <View className="h-3" />
+            <QuickAction
+              icon={<BarChart3 size={18} color={colors.primaryDark} />}
+              label="Leaderboard"
+              onPress={() => router.push("/leaderboard")}
             />
           </View>
 

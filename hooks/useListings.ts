@@ -9,7 +9,10 @@ import {
   fetchListingById,
   fetchListingsByIds,
   fetchMyListings,
+  fetchPublicProfile,
+  fetchSellerListings,
   searchListings,
+  type PublicProfile,
 } from "@/services/listingService";
 import type { ListingWithImages } from "@/types";
 
@@ -109,5 +112,33 @@ export function useMyListings(sellerId: string | undefined) {
     queryKey: ["my-listings", sellerId],
     queryFn: () => fetchMyListings(sellerId as string),
     enabled: Boolean(sellerId),
+  });
+}
+
+/**
+ * A seller's ACTIVE listings for the (frontend-only) public Seller Profile
+ * screen (READ-ONLY, additive). Disabled until a `sellerId` is present so we
+ * never query with an undefined owner. Listings hidden by RLS (e.g. another
+ * campus) simply won't be returned (Req 2.2, 4.6).
+ */
+export function useSellerListings(sellerId: string | undefined) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["seller-listings", sellerId],
+    queryFn: () => fetchSellerListings(sellerId as string),
+    enabled: Boolean(sellerId),
+  });
+}
+
+/**
+ * Best-effort public profile for the Seller Profile header (READ-ONLY,
+ * additive). Returns null when RLS restricts the read to the row owner — the
+ * consuming screen falls back to a generic "Campus seller" header. Disabled
+ * until an `id` is present.
+ */
+export function usePublicProfile(id: string | undefined) {
+  return useQuery<PublicProfile | null, Error>({
+    queryKey: ["public-profile", id],
+    queryFn: () => fetchPublicProfile(id as string),
+    enabled: Boolean(id),
   });
 }

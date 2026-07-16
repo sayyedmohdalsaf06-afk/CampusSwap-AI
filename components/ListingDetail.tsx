@@ -1,11 +1,13 @@
 import {
   Image,
+  Pressable,
   ScrollView,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
-import { Gift, ImageOff } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { ChevronRight, Gift, ImageOff, User } from "lucide-react-native";
 
 import { Badge } from "@/components/Badge";
 import { getListingImageUrl } from "@/lib/storage";
@@ -70,6 +72,7 @@ function MetaRow({
  * card with dividers. Reservation actions live in <ReservationActions />.
  */
 export function ListingDetail({ listing }: ListingDetailProps) {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDonate = listing.listing_type === "donate";
   const pill = statusPill(listing.status);
@@ -164,6 +167,30 @@ export function ListingDetail({ listing }: ListingDetailProps) {
             </Text>
           </View>
         ) : null}
+
+        {/* Seller row → public Seller Profile (frontend-only route). RLS may
+            restrict the public profile read, so that screen degrades to a
+            generic "Campus seller" header when needed. */}
+        <Pressable
+          onPress={() => router.push(`/seller/${listing.seller_id}`)}
+          accessibilityRole="button"
+          accessibilityLabel="View seller"
+          style={shadows.soft}
+          className="mt-5 flex-row items-center rounded-2xl bg-surface px-4 py-3.5 active:opacity-80"
+        >
+          <View className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-green-50">
+            <User size={18} color={colors.green[600]} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-jakartaSemibold text-ink">
+              View seller
+            </Text>
+            <Text className="text-xs font-jakarta text-subtle">
+              See their other active listings
+            </Text>
+          </View>
+          <ChevronRight size={20} color={colors.subtle} />
+        </Pressable>
       </View>
     </ScrollView>
   );
