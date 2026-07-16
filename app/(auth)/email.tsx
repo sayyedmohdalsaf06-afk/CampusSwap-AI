@@ -1,16 +1,21 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { GraduationCap } from "lucide-react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { Button } from "@/components/Button";
+import { colors, gradients, shadows } from "@/lib/theme";
 import { isDemo } from "@/lib/env";
 import {
   demoSignIn,
@@ -18,6 +23,10 @@ import {
   requestOtp,
   sendMagicLink,
 } from "@/services/authService";
+
+/** Shared input styling from the design system (rounded surface, Jakarta ink). */
+const INPUT_CLASS =
+  "rounded-2xl border border-border bg-surface px-4 py-3.5 text-base font-jakarta text-ink";
 
 const emailSchema = z.object({
   email: z
@@ -122,85 +131,114 @@ export default function EmailScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center bg-white px-6">
-      <Text className="text-2xl font-bold text-gray-900">CampusSwap AI</Text>
-      <Text className="mt-2 text-base text-gray-500">
-        Sign in with your institutional email to verify your campus.
-      </Text>
-
-      <View className="mt-8">
-        <Text className="mb-1 text-sm font-medium text-gray-700">Email</Text>
-        <Controller
-          control={control}
-          name="email"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              className="rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900"
-              placeholder="you@university.edu"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              editable={!submitting}
-            />
-          )}
-        />
-        {errors.email ? (
-          <Text className="mt-1 text-sm text-red-600">
-            {errors.email.message}
-          </Text>
-        ) : null}
-        {formError ? (
-          <Text className="mt-2 text-sm text-red-600">{formError}</Text>
-        ) : null}
-        {notice ? (
-          <Text className="mt-2 text-sm text-green-700">{notice}</Text>
-        ) : null}
-      </View>
-
-      <Pressable
-        className="mt-6 items-center rounded-lg bg-gray-900 py-3 active:opacity-80"
-        disabled={submitting || magicSending}
-        onPress={handleSubmit(onSubmit)}
+    <View className="flex-1 bg-bg">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-base font-semibold text-white">
-            Send code
-          </Text>
-        )}
-      </Pressable>
-
-      <Pressable
-        className="mt-3 items-center py-3 active:opacity-60"
-        disabled={submitting || magicSending}
-        onPress={onMagicLink}
-        accessibilityRole="button"
-        accessibilityLabel="Email me a sign-in link instead"
-      >
-        {magicSending ? (
-          <ActivityIndicator color="#111827" />
-        ) : (
-          <Text className="text-base font-medium text-gray-700">
-            Email me a sign-in link instead
-          </Text>
-        )}
-      </Pressable>
-
-      {isDemo ? (
-        <Pressable
-          className="mt-3 items-center rounded-lg border border-gray-300 py-3 active:opacity-80"
-          disabled={submitting || magicSending}
-          onPress={onDemo}
+        <ScrollView
+          contentContainerClassName="flex-grow justify-center px-6 py-16"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text className="text-base font-semibold text-gray-900">
-            Continue in demo mode
+          {/* Branded header — gradient logo badge + wordmark */}
+          <View className="mb-10 items-center">
+            <LinearGradient
+              colors={gradients.authHeader as unknown as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={shadows.card}
+              className="h-20 w-20 items-center justify-center rounded-3xl"
+            >
+              <GraduationCap size={38} color={colors.surface} />
+            </LinearGradient>
+            <Text className="mt-5 text-3xl font-jakartaExtrabold text-ink">
+              CampusSwap AI
+            </Text>
+            <Text className="mt-2 text-center text-base font-jakarta text-muted">
+              Sign in with your institutional email to verify your campus.
+            </Text>
+          </View>
+
+          {/* Email field */}
+          <Text className="mb-2 text-sm font-jakartaSemibold text-ink">
+            Email
           </Text>
-        </Pressable>
-      ) : null}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                className={INPUT_CLASS}
+                placeholder="you@university.edu"
+                placeholderTextColor={colors.subtle}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                editable={!submitting}
+              />
+            )}
+          />
+          {errors.email ? (
+            <Text className="mt-1.5 text-sm font-jakartaMedium text-danger-text">
+              {errors.email.message}
+            </Text>
+          ) : null}
+          {formError ? (
+            <Text className="mt-2 text-sm font-jakartaMedium text-danger-text">
+              {formError}
+            </Text>
+          ) : null}
+          {notice ? (
+            <Text className="mt-2 text-sm font-jakartaMedium text-green-700">
+              {notice}
+            </Text>
+          ) : null}
+
+          {/* Primary action — send OTP code */}
+          <View className="mt-7">
+            <Button
+              label="Send code"
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={submitting}
+              disabled={magicSending}
+              onPress={handleSubmit(onSubmit)}
+            />
+          </View>
+
+          {/* Fallback — magic sign-in link */}
+          <View className="mt-3">
+            <Button
+              label="Email me a sign-in link instead"
+              variant="ghost"
+              size="lg"
+              fullWidth
+              loading={magicSending}
+              disabled={submitting}
+              onPress={onMagicLink}
+            />
+          </View>
+
+          {/* Demo-mode bypass (dev only) */}
+          {isDemo ? (
+            <View className="mt-3">
+              <Button
+                label="Continue in demo mode"
+                variant="outline"
+                size="lg"
+                fullWidth
+                disabled={submitting || magicSending}
+                onPress={onDemo}
+              />
+            </View>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
