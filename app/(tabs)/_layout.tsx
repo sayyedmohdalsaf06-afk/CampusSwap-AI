@@ -1,6 +1,8 @@
 import { Tabs } from "expo-router";
 import { Home, Search, User } from "lucide-react-native";
 
+import { colors } from "@/lib/theme";
+
 /**
  * Tabs navigator (design §4.2 `(tabs)` route group). Exposes the "Feed",
  * "Search", and "Profile" tabs; additional tabs (Need It) are added by later
@@ -12,8 +14,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#111827",
-        tabBarInactiveTintColor: "#9ca3af",
+        // Design-system accent: active tabs use the primary green, inactive use subtle.
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subtle,
       }}
     >
       <Tabs.Screen
