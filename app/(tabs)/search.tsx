@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { Search as SearchIcon, X } from "lucide-react-native";
+import { FlatList, ScrollView, Text, View } from "react-native";
 
+import { CategoryChip } from "@/components/CategoryChip";
+import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
+import { SearchBar } from "@/components/SearchBar";
+import { Skeleton } from "@/components/Skeleton";
 import { LISTING_CATEGORIES } from "@/components/CategoryPicker";
 import { useSearchListings } from "@/hooks/useListings";
+import { shadows } from "@/lib/theme";
 
 /**
  * Search / Filter screen (design §4.2 `(tabs)/search.tsx`, §1.6 Flow 4;
@@ -20,7 +16,22 @@ import { useSearchListings } from "@/hooks/useListings";
  * campus feed plus a single-select category filter (with an "All" clear
  * option). Results come from `useSearchListings`, which searches active
  * listings only (Req 4.6) within the caller's campus (RLS — Req 2.2).
+ *
+ * Reskinned to the design system: soft background, design-system `SearchBar`
+ * and `CategoryChip`, skeleton loading placeholders, and `EmptyState` for the
+ * empty / error states. Search behavior (debounce, re-tap-to-clear) is
+ * unchanged.
  */
+
+/** Emoji glyphs for the filter chips — purely presentational. */
+const CATEGORY_ICONS: Record<string, string> = {
+  books: "📚",
+  electronics: "💻",
+  furniture: "🛋️",
+  hostel_essentials: "🧺",
+  cycles: "🚲",
+};
+
 export default function SearchScreen() {
   // Raw input value (updates every keystroke) …
   const [text, setText] = useState("");
@@ -45,53 +56,40 @@ export default function SearchScreen() {
   const hasCriteria = debouncedQuery.trim().length > 0 || category !== null;
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-bg">
       {/* Header + search input */}
-      <View className="border-b border-gray-100 px-5 pb-3 pt-14">
-        <Text className="mb-3 text-2xl font-bold text-gray-900">Search</Text>
+      <View className="px-5 pb-3 pt-14">
+        <Text className="mb-3 text-2xl font-jakartaExtrabold text-ink">
+          Search
+        </Text>
 
-        <View className="flex-row items-center rounded-xl border border-gray-300 bg-gray-50 px-3">
-          <SearchIcon size={18} color="#9ca3af" />
-          <TextInput
-            className="ml-2 flex-1 py-2.5 text-base text-gray-900"
-            placeholder="Search listings"
-            placeholderTextColor="#9ca3af"
-            value={text}
-            onChangeText={setText}
-            returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Search listings"
-          />
-          {text.length > 0 && (
-            <Pressable
-              onPress={() => setText("")}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Clear search"
-            >
-              <X size={18} color="#9ca3af" />
-            </Pressable>
-          )}
-        </View>
+        <SearchBar
+          value={text}
+          onChangeText={setText}
+          placeholder="Search listings"
+        />
+      </View>
 
-        {/* Category filter chips: "All" clears the filter (Req 4.3). */}
+      {/* Category filter chips: "All" clears the filter (Req 4.3). */}
+      <View className="pb-1">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="mt-3 -mx-1"
-          contentContainerClassName="px-1 gap-2"
+          className="px-4"
+          contentContainerClassName="gap-2 pr-4"
         >
           <CategoryChip
+            icon="🛍️"
             label="All"
-            selected={category === null}
+            active={category === null}
             onPress={() => setCategory(null)}
           />
           {LISTING_CATEGORIES.map((cat) => (
             <CategoryChip
               key={cat.value}
+              icon={CATEGORY_ICONS[cat.value]}
               label={cat.label}
-              selected={category === cat.value}
+              active={category === cat.value}
               // Re-tapping the active category clears it back to "All".
               onPress={() =>
                 setCategory((prev) => (prev === cat.value ? null : cat.value))
@@ -109,35 +107,6 @@ export default function SearchScreen() {
         onRetry={() => refetch()}
       />
     </View>
-  );
-}
-
-type CategoryChipProps = {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-};
-
-/** A single selectable category pill mirroring the CategoryPicker styling. */
-function CategoryChip({ label, selected, onPress }: CategoryChipProps) {
-  return (
-    <Pressable
-      className={`rounded-full border px-3.5 py-1.5 active:opacity-70 ${
-        selected ? "border-gray-900 bg-gray-900" : "border-gray-300 bg-white"
-      }`}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={label}
-    >
-      <Text
-        className={`text-sm font-medium ${
-          selected ? "text-white" : "text-gray-700"
-        }`}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -159,45 +128,40 @@ function SearchBody({
 }: SearchBodyProps) {
   const rows = listings ?? [];
 
+  // Loading skeletons — ListingCard-shaped placeholders.
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator color="#111827" />
+      <View className="flex-1 px-4 pt-3">
+        {[0, 1, 2].map((i) => (
+          <ListingCardSkeleton key={i} />
+        ))}
       </View>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center px-8">
-        <Text className="text-center text-base text-gray-700">
-          We couldn't run your search.
-        </Text>
-        <Pressable
-          className="mt-4 rounded-lg bg-gray-900 px-5 py-2.5 active:opacity-80"
-          onPress={onRetry}
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-        >
-          <Text className="text-sm font-semibold text-white">Try again</Text>
-        </Pressable>
-      </View>
+      <EmptyState
+        icon="⚠️"
+        title="We couldn't run your search."
+        subtitle="Something went wrong. Please try again."
+        action={{ label: "Try again", onPress: onRetry }}
+      />
     );
   }
 
   // Empty state (Req 4.5) — friendlier hint when the user has active criteria.
   if (rows.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center px-8">
-        <Text className="text-center text-base font-medium text-gray-900">
-          No results found
-        </Text>
-        <Text className="mt-1 text-center text-sm text-gray-500">
-          {hasCriteria
+      <EmptyState
+        icon="🔍"
+        title="No results found"
+        subtitle={
+          hasCriteria
             ? "Try a different keyword or adjust your category filter."
-            : "There are no active listings in your campus yet."}
-        </Text>
-      </View>
+            : "There are no active listings in your campus yet."
+        }
+      />
     );
   }
 
@@ -206,9 +170,26 @@ function SearchBody({
       data={rows}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <ListingCard listing={item} />}
-      contentContainerClassName="px-4 pt-4 pb-8"
+      contentContainerClassName="px-4 pt-3 pb-8"
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     />
+  );
+}
+
+/** A ListingCard-shaped loading placeholder: 4:3 cover block + text lines. */
+function ListingCardSkeleton() {
+  return (
+    <View
+      style={shadows.card}
+      className="mb-3 overflow-hidden rounded-card bg-surface"
+    >
+      <Skeleton height={180} radius={0} />
+      <View className="p-4">
+        <Skeleton width="70%" height={16} />
+        <Skeleton width="40%" height={12} className="mt-2" />
+        <Skeleton width="30%" height={20} className="mt-3" />
+      </View>
+    </View>
   );
 }
