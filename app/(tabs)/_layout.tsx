@@ -1,13 +1,12 @@
 import { Tabs } from "expo-router";
-import { Home, Search, User } from "lucide-react-native";
+import { Home, Megaphone, Search, User } from "lucide-react-native";
 
 import { colors } from "@/lib/theme";
 
 /**
  * Tabs navigator (design §4.2 `(tabs)` route group). Exposes the "Feed",
- * "Search", and "Profile" tabs; additional tabs (Need It) are added by later
- * phases. `(tabs)/index.tsx` maps to "/", so the authenticated app shell lands
- * there.
+ * "Search", "Need It", and "Profile" tabs. `(tabs)/index.tsx` maps to "/", so
+ * the authenticated app shell lands there.
  */
 export default function TabsLayout() {
   return (
@@ -31,6 +30,15 @@ export default function TabsLayout() {
         options={{
           title: "Search",
           tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="needit"
+        options={{
+          title: "Need It",
+          tabBarIcon: ({ color, size }) => (
+            <Megaphone color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen

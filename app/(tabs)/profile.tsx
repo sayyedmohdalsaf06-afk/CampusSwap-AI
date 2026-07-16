@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Heart,
   Leaf,
+  MessageCircle,
   Settings,
   Sparkles,
 } from "lucide-react-native";
@@ -198,6 +199,12 @@ function ProfileContent({ profile }: { profile: Profile }) {
               icon={<Heart size={18} color={colors.primaryDark} />}
               label="Wishlist"
               onPress={() => router.push("/wishlist")}
+            />
+            <View className="h-3" />
+            <QuickAction
+              icon={<MessageCircle size={18} color={colors.primaryDark} />}
+              label="Messages"
+              onPress={() => router.push("/chat")}
             />
           </View>
 
