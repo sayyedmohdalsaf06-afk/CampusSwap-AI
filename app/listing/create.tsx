@@ -16,9 +16,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ChevronLeft, ImagePlus, Sparkles, X } from "lucide-react-native";
 
+import { Button } from "@/components/Button";
 import { CategoryPicker } from "@/components/CategoryPicker";
-import { PrimaryButton } from "@/components/PrimaryButton";
 import { Segmented } from "@/components/Segmented";
+import { colors, shadows } from "@/lib/theme";
 import { generateListing } from "@/services/aiService";
 import {
   assetToBase64,
@@ -50,6 +51,10 @@ import type { ListingType } from "@/types";
 
 /** Max images sent to the AI proxy — keeps the request small/fast (Req 8.3). */
 const AI_MAX_IMAGES = 3;
+
+/** Shared input styling from the design system (rounded surface, Jakarta ink). */
+const INPUT_CLASS =
+  "rounded-2xl border border-border bg-surface px-4 py-3.5 text-base font-jakarta text-ink";
 
 const createListingSchema = z
   .object({
@@ -244,20 +249,21 @@ export default function CreateListingScreen() {
   });
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-bg">
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header */}
-      <View className="flex-row items-center border-b border-gray-100 px-3 pb-2 pt-14">
+      {/* Header — rounded surface back button (soft shadow) + title */}
+      <View className="flex-row items-center gap-3 px-4 pb-3 pt-14">
         <Pressable
-          className="flex-row items-center rounded-lg px-2 py-2 active:opacity-60"
           onPress={goBack}
           accessibilityRole="button"
           accessibilityLabel="Go back"
+          style={shadows.soft}
+          className="h-11 w-11 items-center justify-center rounded-2xl bg-surface active:opacity-70"
         >
-          <ChevronLeft size={22} color="#111827" />
+          <ChevronLeft size={22} color={colors.ink} />
         </Pressable>
-        <Text className="text-lg font-bold text-gray-900">New listing</Text>
+        <Text className="text-xl font-jakartaBold text-ink">New listing</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -265,12 +271,12 @@ export default function CreateListingScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
-          contentContainerClassName="px-5 pb-10 pt-5"
+          contentContainerClassName="px-5 pb-10 pt-4"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Listing type (Req 3.1) */}
-          <Text className="mb-2 text-sm font-semibold text-gray-700">
+          <Text className="mb-2 text-sm font-jakartaSemibold text-ink">
             Listing type
           </Text>
           <Controller
@@ -289,7 +295,7 @@ export default function CreateListingScreen() {
           />
 
           {/* Photos (Req 3.8) */}
-          <Text className="mb-2 mt-6 text-sm font-semibold text-gray-700">
+          <Text className="mb-2 mt-6 text-sm font-jakartaSemibold text-ink">
             Photos
           </Text>
           <ScrollView
@@ -301,62 +307,69 @@ export default function CreateListingScreen() {
               <View key={`${img.uri}-${index}`} className="relative">
                 <Image
                   source={{ uri: img.uri }}
-                  className="h-24 w-24 rounded-xl bg-gray-100"
+                  className="h-24 w-24 rounded-2xl bg-borderLight"
                   resizeMode="cover"
                 />
                 <Pressable
-                  className="absolute -right-2 -top-2 h-6 w-6 items-center justify-center rounded-full bg-gray-900 active:opacity-80"
+                  className="absolute -right-2 -top-2 h-6 w-6 items-center justify-center rounded-full bg-ink active:opacity-80"
                   onPress={() => removeImage(index)}
                   accessibilityRole="button"
                   accessibilityLabel={`Remove photo ${index + 1}`}
                 >
-                  <X size={13} color="#ffffff" />
+                  <X size={13} color={colors.surface} />
                 </Pressable>
               </View>
             ))}
             <Pressable
-              className="h-24 w-24 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 active:opacity-70"
+              className="h-24 w-24 items-center justify-center rounded-2xl border border-dashed border-border bg-surface active:opacity-70"
               onPress={onAddImages}
               accessibilityRole="button"
               accessibilityLabel="Add photos"
             >
-              <ImagePlus size={22} color="#6b7280" />
-              <Text className="mt-1 text-xs text-gray-500">Add</Text>
+              <ImagePlus size={22} color={colors.muted} />
+              <Text className="mt-1 text-xs font-jakartaMedium text-muted">
+                Add
+              </Text>
             </Pressable>
           </ScrollView>
           {imageError ? (
-            <Text className="mt-1.5 text-xs text-red-600">{imageError}</Text>
+            <Text className="mt-1.5 text-xs font-jakartaMedium text-danger-text">
+              {imageError}
+            </Text>
           ) : null}
 
-          {/* AI generate (Req 3.2, 8.3) */}
-          <View className="mt-4">
-            <PrimaryButton
+          {/* AI generate (Req 3.2, 8.3) — subtle card */}
+          <View
+            style={shadows.soft}
+            className="mt-5 rounded-2xl border border-borderLight bg-surface p-4"
+          >
+            <Button
               label={
-                aiState === "loading"
-                  ? "Generating…"
-                  : "Generate with AI"
+                aiState === "loading" ? "Generating…" : "Generate with AI"
               }
               variant="outline"
-              icon={<Sparkles size={18} color="#111827" />}
+              size="md"
+              fullWidth
+              icon={<Sparkles size={18} color={colors.ink} />}
               loading={aiState === "loading"}
               disabled={submitting}
               onPress={onGenerate}
             />
             {aiState === "failed" ? (
-              <Text className="mt-1.5 text-xs text-amber-600">
+              <Text className="mt-2 text-xs font-jakartaMedium text-amber-text">
                 AI is unavailable right now — fill in the details manually below
                 and publish as usual.
               </Text>
             ) : null}
             {aiState === "done" ? (
-              <Text className="mt-1.5 text-xs text-gray-500">
+              <Text className="mt-2 text-xs font-jakarta text-muted">
                 AI filled in the details below — edit anything before publishing.
               </Text>
             ) : null}
           </View>
 
           {/* Editable fields (Req 3.6) */}
-          <Text className="mb-2 mt-6 text-sm font-semibold text-gray-700">
+          <Text className="mb-2 mt-6 text-sm font-jakartaSemibold text-ink">
             Title
           </Text>
           <Controller
@@ -364,9 +377,9 @@ export default function CreateListingScreen() {
             name="title"
             render={({ field: { value, onChange, onBlur } }) => (
               <TextInput
-                className="rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900"
+                className={INPUT_CLASS}
                 placeholder="e.g. Hero cycle, good condition"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.subtle}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -374,13 +387,13 @@ export default function CreateListingScreen() {
             )}
           />
           {errors.title ? (
-            <Text className="mt-1.5 text-xs text-red-600">
+            <Text className="mt-1.5 text-xs font-jakartaMedium text-danger-text">
               {errors.title.message}
             </Text>
           ) : null}
 
           {/* Category (Req 3.8) */}
-          <Text className="mb-2 mt-6 text-sm font-semibold text-gray-700">
+          <Text className="mb-2 mt-6 text-sm font-jakartaSemibold text-ink">
             Category
           </Text>
           <Controller
@@ -391,13 +404,13 @@ export default function CreateListingScreen() {
             )}
           />
           {errors.category ? (
-            <Text className="mt-1.5 text-xs text-red-600">
+            <Text className="mt-1.5 text-xs font-jakartaMedium text-danger-text">
               {errors.category.message}
             </Text>
           ) : null}
 
           {/* Condition (Req 3.8) */}
-          <Text className="mb-2 mt-6 text-sm font-semibold text-gray-700">
+          <Text className="mb-2 mt-6 text-sm font-jakartaSemibold text-ink">
             Condition
           </Text>
           <Controller
@@ -405,9 +418,9 @@ export default function CreateListingScreen() {
             name="condition"
             render={({ field: { value, onChange, onBlur } }) => (
               <TextInput
-                className="rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900"
+                className={INPUT_CLASS}
                 placeholder="e.g. Like New, Good, Fair"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.subtle}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -415,7 +428,7 @@ export default function CreateListingScreen() {
             )}
           />
           {errors.condition ? (
-            <Text className="mt-1.5 text-xs text-red-600">
+            <Text className="mt-1.5 text-xs font-jakartaMedium text-danger-text">
               {errors.condition.message}
             </Text>
           ) : null}
@@ -423,7 +436,7 @@ export default function CreateListingScreen() {
           {/* Price — only for `sell` (Req 3.5, 3.9) */}
           {listingType === "sell" ? (
             <>
-              <Text className="mb-2 mt-6 text-sm font-semibold text-gray-700">
+              <Text className="mb-2 mt-6 text-sm font-jakartaSemibold text-ink">
                 Price (₹)
               </Text>
               <Controller
@@ -431,9 +444,9 @@ export default function CreateListingScreen() {
                 name="price"
                 render={({ field: { value, onChange, onBlur } }) => (
                   <TextInput
-                    className="rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900"
+                    className={INPUT_CLASS}
                     placeholder="e.g. 1500"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.subtle}
                     keyboardType="numeric"
                     value={value}
                     onChangeText={onChange}
@@ -442,7 +455,7 @@ export default function CreateListingScreen() {
                 )}
               />
               {errors.price ? (
-                <Text className="mt-1.5 text-xs text-red-600">
+                <Text className="mt-1.5 text-xs font-jakartaMedium text-danger-text">
                   {errors.price.message}
                 </Text>
               ) : null}
@@ -450,7 +463,7 @@ export default function CreateListingScreen() {
           ) : null}
 
           {/* Description (optional, editable) */}
-          <Text className="mb-2 mt-6 text-sm font-semibold text-gray-700">
+          <Text className="mb-2 mt-6 text-sm font-jakartaSemibold text-ink">
             Description
           </Text>
           <Controller
@@ -458,9 +471,9 @@ export default function CreateListingScreen() {
             name="description"
             render={({ field: { value, onChange, onBlur } }) => (
               <TextInput
-                className="min-h-[96px] rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900"
+                className={`${INPUT_CLASS} min-h-[96px]`}
                 placeholder="Add any details buyers should know"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.subtle}
                 multiline
                 textAlignVertical="top"
                 value={value}
@@ -471,13 +484,18 @@ export default function CreateListingScreen() {
           />
 
           {formError ? (
-            <Text className="mt-4 text-sm text-red-600">{formError}</Text>
+            <Text className="mt-4 text-sm font-jakartaMedium text-danger-text">
+              {formError}
+            </Text>
           ) : null}
 
           {/* Publish (Req 3.8, 3.9, 10.3) */}
           <View className="mt-8">
-            <PrimaryButton
+            <Button
               label={submitting ? "Publishing…" : "Publish listing"}
+              variant="primary"
+              size="lg"
+              fullWidth
               loading={submitting}
               onPress={onPublish}
             />
