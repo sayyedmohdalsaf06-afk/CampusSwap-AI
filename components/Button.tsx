@@ -71,7 +71,10 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      style={showShadow ? shadows.soft : undefined}
+      style={({ pressed }) => [
+        showShadow ? shadows.soft : undefined,
+        { transform: [{ scale: pressed ? 0.97 : 1 }] },
+      ]}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       accessibilityLabel={label}

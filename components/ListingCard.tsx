@@ -1,5 +1,6 @@
 import { Image, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { MotiView } from "moti";
 import { Gift, Heart } from "lucide-react-native";
 
 import { Button } from "@/components/Button";
@@ -58,16 +59,22 @@ export function ListingCard({ listing, onPress, onReserve }: ListingCardProps) {
     onPress ?? (() => router.push(`/listing/${listing.id}`));
 
   return (
-    <Pressable
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel={`View ${listing.title}`}
-      style={({ pressed }) => [
-        shadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-      className="mb-3 overflow-hidden rounded-card bg-surface"
+    <MotiView
+      from={{ opacity: 0, translateY: 10 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: "timing", duration: 320 }}
+      className="mb-3"
     >
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${listing.title}`}
+        style={({ pressed }) => [
+          shadows.card,
+          { transform: [{ scale: pressed ? 0.98 : 1 }] },
+        ]}
+        className="overflow-hidden rounded-card bg-surface"
+      >
       <View className="aspect-[4/3] w-full items-center justify-center bg-borderLight">
         {cover ? (
           <Image
@@ -131,7 +138,8 @@ export function ListingCard({ listing, onPress, onReserve }: ListingCardProps) {
           ) : null}
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+    </MotiView>
   );
 }
 

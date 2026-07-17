@@ -13,6 +13,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Subtle cross-tab transition (bottom-tabs v7 / Expo SDK 54).
+        animation: "shift",
         // Design-system accent: active tabs use the primary green, inactive use subtle.
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.subtle,

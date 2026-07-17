@@ -130,7 +130,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               </Text>
             </View>
           ) : (
-            <Text className="text-2xl font-jakartaExtrabold text-primaryDark">
+            <Text className="text-2xl font-jakartaExtrabold text-ink">
               {formatPrice(listing.price)}
             </Text>
           )}
