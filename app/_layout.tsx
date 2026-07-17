@@ -1,7 +1,7 @@
 import "react-native-url-polyfill/auto";
 import "../global.css";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -15,6 +15,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
+import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { queryClient } from "@/lib/queryClient";
 // NOTE: EXPO_PUBLIC_SKIP_AUTH is intentionally NOT imported/branched on at
 // runtime anymore (deprecated dev bypass). See the commented DEV-ONLY block in
@@ -169,10 +170,17 @@ function RootNavigator() {
  * Root layout. Providers + auth gate. Wires session hydration and routing.
  */
 export default function RootLayout() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style="auto" />
-      <RootNavigator />
+      <View style={{ flex: 1 }}>
+        <RootNavigator />
+        {showSplash ? (
+          <AnimatedSplash onFinish={() => setShowSplash(false)} />
+        ) : null}
+      </View>
     </QueryClientProvider>
   );
 }
