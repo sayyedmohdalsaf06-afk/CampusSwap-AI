@@ -198,8 +198,8 @@ function SettingsContent({
         <Divider />
         <InfoRow
           icon={<Info size={18} color={colors.muted} />}
-          label="About CampusSwap"
-          value="Swap, don't shop 🌱"
+          label="About CAMPLX"
+          value="Trade smarter on campus."
         />
       </Card>
 

@@ -13,9 +13,9 @@ import type { ViewStyle } from "react-native";
  * referenced inline (e.g. an icon `color`) is identical to its utility class.
  */
 export const colors = {
-  primary: "#22C55E",
-  primaryDark: "#16A34A",
-  secondary: "#10B981",
+  primary: "#00C26F",
+  primaryDark: "#00A65E",
+  secondary: "#7C3AED",
   bg: "#F8FAFC",
   surface: "#FFFFFF",
   ink: "#0F172A",
@@ -27,8 +27,13 @@ export const colors = {
     50: "#F0FDF4",
     100: "#BBF7D0",
     300: "#86EFAC",
-    600: "#16A34A",
+    600: "#00A65E",
     700: "#065F46",
+  },
+  violet: {
+    bg: "#F5F3FF",
+    text: "#6D28D9",
+    base: "#7C3AED",
   },
   amber: {
     bg: "#FEF3C7",
@@ -45,6 +50,7 @@ export const colors = {
     text: "#DC2626",
     base: "#EF4444",
   },
+  success: "#16A34A",
 } as const;
 
 /**
@@ -81,10 +87,10 @@ export const shadows = {
  * plain string tuples so consumers control direction (start/end) per usage.
  */
 export const gradients = {
-  greenBanner: ["#16A34A", "#059669", "#0D9488"],
+  greenBanner: ["#00A65E", "#00C26F", "#059669"],
   greenSoft: ["#F0FDF4", "#F8FAFC"],
-  authHeader: ["#22C55E", "#10B981"],
-  splash: ["#22C55E", "#16A34A"],
+  authHeader: ["#00C26F", "#00A65E"],
+  splash: ["#00C26F", "#00A65E"],
 } as const;
 
 /**
@@ -95,7 +101,8 @@ export const radius = {
   xl: 12,
   "2xl": 16,
   "3xl": 24,
-  card: 20,
+  card: 28,
+  button: 20,
 } as const;
 
 export type AppColors = typeof colors;

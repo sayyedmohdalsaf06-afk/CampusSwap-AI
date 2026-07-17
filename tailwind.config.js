@@ -9,9 +9,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#22C55E",
-        primaryDark: "#16A34A",
-        secondary: "#10B981",
+        primary: "#00C26F",
+        primaryDark: "#00A65E",
+        secondary: "#7C3AED",
         bg: "#F8FAFC",
         surface: "#FFFFFF",
         ink: "#0F172A",
@@ -23,8 +23,13 @@ module.exports = {
           50: "#F0FDF4",
           100: "#BBF7D0",
           300: "#86EFAC",
-          600: "#16A34A",
+          600: "#00A65E",
           700: "#065F46",
+        },
+        violet: {
+          bg: "#F5F3FF",
+          text: "#6D28D9",
+          base: "#7C3AED",
         },
         amber: {
           bg: "#FEF3C7",
@@ -41,6 +46,7 @@ module.exports = {
           text: "#DC2626",
           base: "#EF4444",
         },
+        success: "#16A34A",
       },
       fontFamily: {
         sans: ["Jakarta"],
@@ -54,7 +60,8 @@ module.exports = {
         xl: "12px",
         "2xl": "16px",
         "3xl": "24px",
-        card: "20px",
+        card: "28px",
+        button: "20px",
       },
     },
   },

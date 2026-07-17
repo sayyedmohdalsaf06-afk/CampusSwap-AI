@@ -153,7 +153,7 @@ export default function EmailScreen() {
               <GraduationCap size={38} color={colors.surface} />
             </LinearGradient>
             <Text className="mt-5 text-3xl font-jakartaExtrabold text-ink">
-              CampusSwap AI
+              CAMPLX
             </Text>
             <Text className="mt-2 text-center text-base font-jakarta text-muted">
               Sign in with your institutional email to verify your campus.

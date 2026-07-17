@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
-import { colors } from "@/lib/theme";
+import { colors, shadows } from "@/lib/theme";
 
 /**
  * Primary action button (design-system foundation). Solid green primary,
@@ -40,8 +40,8 @@ const VARIANT_TEXT: Record<ButtonVariant, string> = {
 };
 
 const SIZE_CONTAINER: Record<ButtonSize, string> = {
-  md: "px-4 py-2.5 rounded-xl",
-  lg: "px-5 py-3.5 rounded-2xl",
+  md: "px-4 py-2.5 rounded-[16px]",
+  lg: "px-5 py-3.5 rounded-button",
 };
 
 const SIZE_TEXT: Record<ButtonSize, string> = {
@@ -62,10 +62,16 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
+  // Apply a subtle elevation to solid/outlined variants (not ghost) while the
+  // button is actionable. Disabled buttons stay flat.
+  const showShadow =
+    !isDisabled && (variant === "primary" || variant === "outline");
+
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      style={showShadow ? shadows.soft : undefined}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       accessibilityLabel={label}

@@ -94,7 +94,7 @@ export default function FeedScreen() {
             className="text-2xl font-jakartaExtrabold text-ink"
             numberOfLines={1}
           >
-            {campusName ?? "CampusSwap"}
+            {campusName ?? "CAMPLX"}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
