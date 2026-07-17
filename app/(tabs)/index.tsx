@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { Leaf, LogOut, Plus } from "lucide-react-native";
+import { Bell, Leaf, LogOut, Plus, Sparkles } from "lucide-react-native";
 
 import { CategoryChip } from "@/components/CategoryChip";
 import { EmptyState } from "@/components/EmptyState";
@@ -12,9 +11,10 @@ import { Skeleton } from "@/components/Skeleton";
 import { LISTING_CATEGORIES } from "@/components/CategoryPicker";
 import { flattenFeed, useFeed } from "@/hooks/useListings";
 import { supabase } from "@/lib/supabase";
-import { colors, gradients, shadows } from "@/lib/theme";
+import { colors, shadows } from "@/lib/theme";
 import { signOut } from "@/services/authService";
 import { useAuthStore } from "@/stores/authStore";
+import { formatCarbonKg } from "@/utils/format";
 
 /**
  * Campus feed / Home screen (design §4.2 `(tabs)/index.tsx`, §1.6 Flow 4;
@@ -22,10 +22,12 @@ import { useAuthStore } from "@/stores/authStore";
  * (RLS enforces campus scope — Req 2.2) with a FlatList of ListingCard, loading
  * / empty / error states, and incremental pagination via `onEndReached`.
  *
- * Reskinned to the design system: soft background, rounded/shadowed header
- * actions, a tap-through SearchBar, a green eco gradient hero banner, and a
- * horizontal category browse row that routes to the Search tab (filtering lives
- * there — no new query logic is added to the feed).
+ * Premium reskin (CAMPLX): white surfaces + deep-navy ink + violet accents with
+ * soft shadows. The header pairs a two-line greeting with a navy primary CTA and
+ * a decorative bell; the old dominant green gradient banner is replaced by two
+ * compact stat cards (green is now only a small sustainability accent). Category
+ * pills and the tap-through search field route to the Search tab — no new query
+ * logic is added to the feed.
  */
 
 /** Emoji glyphs for the browse chips — purely presentational. */
@@ -82,40 +84,63 @@ export default function FeedScreen() {
     reset(); // auth gate routes back to (auth)/email
   }
 
+  // Guarded stat-card values — read only from the already-loaded profile; no new
+  // query is issued. `formatCarbonKg` renders "0 kg" when the value is missing.
+  const carbonSaved = formatCarbonKg(profile?.cumulative_carbon_g);
+  const rewardPoints = String(profile?.points ?? 0);
+
   return (
     <View className="flex-1 bg-bg">
-      {/* Header: campus name + create / sign out actions */}
-      <View className="flex-row items-center justify-between px-5 pb-3 pt-14">
+      {/* Header: two-line greeting + decorative bell, subtle sign-out, navy CTA */}
+      <View className="flex-row items-start justify-between px-5 pb-4 pt-14">
         <View className="flex-1 pr-3">
-          <Text className="text-xs font-jakartaMedium uppercase tracking-wide text-subtle">
-            Your campus
+          <Text className="text-sm font-jakartaMedium text-muted">
+            Good evening 👋
           </Text>
           <Text
-            className="text-2xl font-jakartaExtrabold text-ink"
-            numberOfLines={1}
+            className="mt-1 text-2xl font-jakartaExtrabold text-ink"
+            numberOfLines={2}
           >
-            {campusName ?? "CAMPLX"}
+            Find something useful today.
           </Text>
         </View>
+
         <View className="flex-row items-center gap-2">
-          {/* Create-listing entry point (design §4.2 → listing/create). */}
+          {/* Decorative notification bell — no backend wiring (no-op onPress).
+              The violet dot is a purely cosmetic premium touch. */}
+          <View>
+            <Pressable
+              style={shadows.soft}
+              className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:opacity-70"
+              onPress={() => {}}
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+            >
+              <Bell size={20} color={colors.ink} />
+            </Pressable>
+            <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-violet-base" />
+          </View>
+
+          {/* Sign-out kept as a subtle white surface circle (same handler). */}
           <Pressable
             style={shadows.soft}
-            className="h-11 w-11 items-center justify-center rounded-2xl bg-primary active:opacity-80"
-            onPress={() => router.push("/listing/create")}
-            accessibilityRole="button"
-            accessibilityLabel="Create a listing"
-          >
-            <Plus size={22} color="#ffffff" />
-          </Pressable>
-          <Pressable
-            style={shadows.soft}
-            className="h-11 w-11 items-center justify-center rounded-2xl border border-border bg-surface active:opacity-70"
+            className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:opacity-70"
             onPress={onSignOut}
             accessibilityRole="button"
             accessibilityLabel="Sign out"
           >
             <LogOut size={18} color={colors.muted} />
+          </Pressable>
+
+          {/* Primary CTA — filled navy (design §4.2 → listing/create). */}
+          <Pressable
+            style={shadows.soft}
+            className="h-11 w-11 items-center justify-center rounded-full bg-ink active:opacity-80"
+            onPress={() => router.push("/listing/create")}
+            accessibilityRole="button"
+            accessibilityLabel="Create a listing"
+          >
+            <Plus size={22} color="#ffffff" />
           </Pressable>
         </View>
       </View>
@@ -132,6 +157,8 @@ export default function FeedScreen() {
         onOpenSearch={() => router.push("/(tabs)/search")}
         onCreate={() => router.push("/listing/create")}
         onOpenSustainability={() => router.push("/sustainability")}
+        carbonSaved={carbonSaved}
+        rewardPoints={rewardPoints}
       />
     </View>
   );
@@ -147,6 +174,8 @@ type FeedBodyProps = {
   onOpenSearch: () => void;
   onCreate: () => void;
   onOpenSustainability: () => void;
+  carbonSaved: string;
+  rewardPoints: string;
 };
 
 /** Renders the loading / error / empty / list states for the feed. */
@@ -160,52 +189,72 @@ function FeedBody({
   onOpenSearch,
   onCreate,
   onOpenSustainability,
+  carbonSaved,
+  rewardPoints,
 }: FeedBodyProps) {
-  // The header block (search + hero banner + browse chips) is shared across the
+  // The header block (search + stat cards + browse pills) is shared across the
   // loading and populated states so the chrome stays put while content loads.
   const header = (
     <View>
       {/* Tap-through search field → full Search tab. */}
       <SearchBar
         readOnly
-        placeholder="Search listings"
+        placeholder="Search books, cycles, furniture…"
         onPress={onOpenSearch}
       />
 
-      {/* Green eco hero banner (design-system gradient) — tappable → the
-          Sustainability dashboard. Visuals are unchanged; the Pressable just
-          adds a press affordance. */}
-      <Pressable
-        onPress={onOpenSustainability}
-        accessibilityRole="button"
-        accessibilityLabel="View your sustainability impact"
-        className="mt-4 active:opacity-90"
-      >
-        <LinearGradient
-          colors={gradients.greenBanner as unknown as [string, string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[shadows.card, { borderRadius: 20 }]}
-          className="overflow-hidden rounded-card p-5"
+      {/* Compact stat cards replace the old green banner. Green survives only as
+          a small sustainability accent (Card A); Card B carries the violet
+          reward accent. Card A stays tappable → the Sustainability dashboard. */}
+      <View className="mt-5 flex-row gap-3">
+        <Pressable
+          onPress={onOpenSustainability}
+          style={shadows.soft}
+          className="flex-1 rounded-card bg-surface p-4 active:opacity-90"
+          accessibilityRole="button"
+          accessibilityLabel="View your sustainability impact"
         >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 pr-3">
-              <Text className="text-lg font-jakartaExtrabold text-white">
-                Save the planet, one swap at a time
-              </Text>
-              <Text className="mt-1 text-sm font-jakarta text-white/85">
-                Every reused item keeps CO₂ out of the air. Swap, don't shop. 🌱
-              </Text>
-            </View>
-            <View className="h-14 w-14 items-center justify-center rounded-full bg-white/20">
-              <Leaf size={26} color="#ffffff" />
-            </View>
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-green-50">
+            <Leaf size={18} color={colors.primary} />
           </View>
-        </LinearGradient>
-      </Pressable>
+          <Text
+            className="mt-2.5 text-xl font-jakartaExtrabold text-ink"
+            numberOfLines={1}
+          >
+            {carbonSaved}
+          </Text>
+          <Text
+            className="mt-0.5 text-xs font-jakartaMedium text-muted"
+            numberOfLines={1}
+          >
+            CO₂ saved
+          </Text>
+        </Pressable>
 
-      {/* Horizontal browse chips → route to Search (filtering lives there). */}
-      <View className="mt-4">
+        <View
+          style={shadows.soft}
+          className="flex-1 rounded-card bg-surface p-4"
+        >
+          <View className="h-9 w-9 items-center justify-center rounded-full bg-violet-bg">
+            <Sparkles size={18} color={colors.violet.base} />
+          </View>
+          <Text
+            className="mt-2.5 text-xl font-jakartaExtrabold text-ink"
+            numberOfLines={1}
+          >
+            {rewardPoints}
+          </Text>
+          <Text
+            className="mt-0.5 text-xs font-jakartaMedium text-muted"
+            numberOfLines={1}
+          >
+            Reward points
+          </Text>
+        </View>
+      </View>
+
+      {/* Horizontal browse pills → route to Search (filtering lives there). */}
+      <View className="mt-5">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -224,7 +273,7 @@ function FeedBody({
         </ScrollView>
       </View>
 
-      <Text className="mb-1 mt-5 text-base font-jakartaBold text-ink">
+      <Text className="mb-2 mt-6 text-lg font-jakartaBold text-ink">
         Fresh on campus
       </Text>
     </View>
@@ -233,7 +282,7 @@ function FeedBody({
   // Initial-load skeletons — ListingCard-shaped placeholders (Req 8.1).
   if (isLoading) {
     return (
-      <View className="flex-1 px-4 pt-2">
+      <View className="flex-1 px-5 pt-2">
         {header}
         <View className="mt-1">
           {[0, 1, 2].map((i) => (
@@ -247,7 +296,7 @@ function FeedBody({
   // Error + retry state.
   if (isError) {
     return (
-      <View className="flex-1 px-4 pt-2">
+      <View className="flex-1 px-5 pt-2">
         {header}
         <EmptyState
           icon="⚠️"
@@ -262,7 +311,7 @@ function FeedBody({
   // Empty state (Req 4.5-style friendly message for an empty campus feed).
   if (listings.length === 0) {
     return (
-      <View className="flex-1 px-4 pt-2">
+      <View className="flex-1 px-5 pt-2">
         {header}
         <EmptyState
           icon="🌱"
@@ -280,7 +329,7 @@ function FeedBody({
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <ListingCard listing={item} />}
       ListHeaderComponent={header}
-      contentContainerClassName="px-4 pt-2 pb-8"
+      contentContainerClassName="px-5 pt-2 pb-8"
       showsVerticalScrollIndicator={false}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
