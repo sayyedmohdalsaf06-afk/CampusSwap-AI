@@ -1,8 +1,9 @@
 import { Image, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Gift, Heart, ImageOff } from "lucide-react-native";
+import { Gift, Heart } from "lucide-react-native";
 
 import { Button } from "@/components/Button";
+import { ListingImagePlaceholder } from "@/components/ListingImagePlaceholder";
 import { getListingImageUrl } from "@/lib/storage";
 import { colors, shadows } from "@/lib/theme";
 import { useWishlistStore } from "@/stores/wishlistStore";
@@ -75,10 +76,7 @@ export function ListingCard({ listing, onPress, onReserve }: ListingCardProps) {
             resizeMode="cover"
           />
         ) : (
-          <View className="items-center">
-            <ImageOff size={28} color={colors.subtle} />
-            <Text className="mt-1 text-xs font-jakarta text-subtle">No photo</Text>
-          </View>
+          <ListingImagePlaceholder category={listing.category} />
         )}
 
         {/* Wishlist heart overlay (top-right). Its own Pressable stops the
@@ -123,7 +121,7 @@ export function ListingCard({ listing, onPress, onReserve }: ListingCardProps) {
               </Text>
             </View>
           ) : (
-            <Text className="text-lg font-jakartaExtrabold text-primaryDark">
+            <Text className="text-lg font-jakartaExtrabold text-ink">
               {formatPrice(listing.price)}
             </Text>
           )}

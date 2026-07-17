@@ -7,9 +7,10 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronRight, Gift, ImageOff, User } from "lucide-react-native";
+import { ChevronRight, Gift, User } from "lucide-react-native";
 
 import { Badge } from "@/components/Badge";
+import { ListingImagePlaceholder } from "@/components/ListingImagePlaceholder";
 import { getListingImageUrl } from "@/lib/storage";
 import { colors, shadows } from "@/lib/theme";
 import type { ListingStatus, ListingWithImages } from "@/types";
@@ -105,14 +106,8 @@ export function ListingDetail({ listing }: ListingDetailProps) {
             ))}
           </ScrollView>
         ) : (
-          <View
-            className="items-center justify-center bg-borderLight"
-            style={{ width, height: width * 0.75 }}
-          >
-            <ImageOff size={38} color={colors.subtle} />
-            <Text className="mt-2 text-sm font-jakarta text-subtle">
-              No photos
-            </Text>
+          <View style={{ width, height: width * 0.75 }}>
+            <ListingImagePlaceholder category={listing.category} />
           </View>
         )}
       </View>
