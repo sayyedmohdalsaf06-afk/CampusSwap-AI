@@ -104,9 +104,9 @@ export default function NeedItScreen() {
             Post what you&apos;re looking for — your campus can help.
           </Text>
 
-          {/* Intro hero — green gradient banner. */}
+          {/* Intro hero — deep-navy gradient banner. */}
           <LinearGradient
-            colors={gradients.greenBanner as unknown as [string, string, string]}
+            colors={gradients.brandNavy as unknown as [string, string]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[shadows.card, { borderRadius: 20 }]}

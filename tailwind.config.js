@@ -12,6 +12,7 @@ module.exports = {
         primary: "#00C26F",
         primaryDark: "#00A65E",
         secondary: "#7C3AED",
+        navy: "#0B132B",
         bg: "#F8FAFC",
         surface: "#FFFFFF",
         ink: "#0F172A",

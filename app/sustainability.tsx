@@ -85,20 +85,24 @@ function SustainabilityContent({ profile }: { profile: Profile }) {
       contentContainerClassName="px-4 pb-12 pt-1"
       showsVerticalScrollIndicator={false}
     >
-      {/* Green gradient hero — headline carbon saved + points. */}
+      {/* Deep-navy gradient hero — headline carbon saved + points. */}
       <LinearGradient
-        colors={gradients.greenBanner as unknown as [string, string, string]}
+        colors={gradients.brandNavy as unknown as [string, string]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[shadows.card, { borderRadius: 20 }]}
         className="overflow-hidden rounded-card p-5"
       >
         <View className="flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
+          <View className="min-w-0 flex-1 pr-3">
             <Text className="text-xs font-jakartaMedium uppercase tracking-wide text-white/70">
               Carbon saved
             </Text>
-            <Text className="mt-1 text-4xl font-jakartaExtrabold text-white">
+            <Text
+              className="mt-1 text-4xl font-jakartaExtrabold text-white"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {formatCarbonKg(profile.cumulative_carbon_g)}
             </Text>
             <Text className="mt-1 text-sm font-jakarta text-white/85">

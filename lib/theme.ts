@@ -16,6 +16,7 @@ export const colors = {
   primary: "#00C26F",
   primaryDark: "#00A65E",
   secondary: "#7C3AED",
+  navy: "#0B132B",
   bg: "#F8FAFC",
   surface: "#FFFFFF",
   ink: "#0F172A",
@@ -91,6 +92,7 @@ export const gradients = {
   greenSoft: ["#F0FDF4", "#F8FAFC"],
   authHeader: ["#00C26F", "#00A65E"],
   splash: ["#00C26F", "#00A65E"],
+  brandNavy: ["#0B132B", "#162447"],
 } as const;
 
 /**

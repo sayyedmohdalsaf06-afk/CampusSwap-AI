@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { shadows } from "@/lib/theme";
+
 /**
  * Horizontal category chip (design-system foundation). A pill with an optional
  * leading icon/emoji; the active chip is solid green with white text, inactive
@@ -30,7 +32,8 @@ export function CategoryChip({
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       accessibilityLabel={label}
-      className={`flex-row items-center rounded-full px-4 py-2 active:opacity-80 ${
+      style={active ? undefined : shadows.soft}
+      className={`flex-row items-center rounded-full px-4 py-2.5 active:opacity-80 ${
         active ? "bg-primary" : "border border-border bg-surface"
       }`}
     >

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { Bell, Leaf, LogOut, Plus, Sparkles } from "lucide-react-native";
 
 import { CategoryChip } from "@/components/CategoryChip";
@@ -11,7 +12,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { LISTING_CATEGORIES } from "@/components/CategoryPicker";
 import { flattenFeed, useFeed } from "@/hooks/useListings";
 import { supabase } from "@/lib/supabase";
-import { colors, shadows } from "@/lib/theme";
+import { colors, gradients, shadows } from "@/lib/theme";
 import { signOut } from "@/services/authService";
 import { useAuthStore } from "@/stores/authStore";
 import { formatCarbonKg } from "@/utils/format";
@@ -203,32 +204,42 @@ function FeedBody({
         onPress={onOpenSearch}
       />
 
-      {/* Compact stat cards replace the old green banner. Green survives only as
-          a small sustainability accent (Card A); Card B carries the violet
-          reward accent. Card A stays tappable → the Sustainability dashboard. */}
-      <View className="mt-5 flex-row gap-3">
+      {/* Compact stat cards replace the old green banner. Card A is a premium
+          deep-navy sustainability card (green survives only as the leaf accent);
+          Card B is a white surface with the violet reward accent for contrast.
+          `items-stretch` keeps both cards equal height. Card A stays tappable →
+          the Sustainability dashboard. */}
+      <View className="mt-5 flex-row items-stretch gap-3">
         <Pressable
           onPress={onOpenSustainability}
-          style={shadows.soft}
-          className="flex-1 rounded-card bg-surface p-4 active:opacity-90"
+          style={shadows.card}
+          className="flex-1 overflow-hidden rounded-card active:opacity-90"
           accessibilityRole="button"
           accessibilityLabel="View your sustainability impact"
         >
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-green-50">
-            <Leaf size={18} color={colors.primary} />
-          </View>
-          <Text
-            className="mt-2.5 text-xl font-jakartaExtrabold text-ink"
-            numberOfLines={1}
+          <LinearGradient
+            colors={gradients.brandNavy as unknown as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ flex: 1 }}
+            className="p-4"
           >
-            {carbonSaved}
-          </Text>
-          <Text
-            className="mt-0.5 text-xs font-jakartaMedium text-muted"
-            numberOfLines={1}
-          >
-            CO₂ saved
-          </Text>
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-white/10">
+              <Leaf size={18} color={colors.primary} />
+            </View>
+            <Text
+              className="mt-2.5 text-xl font-jakartaExtrabold text-white"
+              numberOfLines={1}
+            >
+              {carbonSaved}
+            </Text>
+            <Text
+              className="mt-0.5 text-xs font-jakartaMedium text-white/70"
+              numberOfLines={1}
+            >
+              CO₂ saved
+            </Text>
+          </LinearGradient>
         </Pressable>
 
         <View
@@ -258,8 +269,7 @@ function FeedBody({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="-mx-1"
-          contentContainerClassName="px-1 gap-2"
+          contentContainerClassName="pr-1 gap-2"
         >
           <CategoryChip icon="🛍️" label="All" onPress={onOpenSearch} />
           {LISTING_CATEGORIES.map((cat) => (
