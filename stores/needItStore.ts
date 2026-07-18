@@ -16,20 +16,40 @@ import { createJSONStorage, persist } from "zustand/middleware";
  * // only on this device.
  */
 
+/**
+ * How urgently a student needs the requested item. Purely presentational —
+ * drives the urgency chip/badge accent on the Need It board.
+ */
+export type NeedUrgency = "low" | "normal" | "urgent";
+
 /** A single locally-stored "Need It" request. */
 export type NeedRequest = {
   id: string;
   title: string;
   category: string | null;
   note?: string;
+  /**
+   * Urgency accent. Defaults to "normal" when a request is added without one.
+   * Requests persisted before urgency existed won't have this field, so
+   * consumers should treat a missing value as "normal" defensively.
+   */
+  urgency: NeedUrgency;
   createdAt: number;
 };
 
 type NeedItState = {
   /** Posted requests. Newest-first (new requests are prepended). */
   requests: NeedRequest[];
-  /** Add a new request to the front of the list. */
-  add: (input: { title: string; category: string | null; note?: string }) => void;
+  /**
+   * Add a new request to the front of the list. `urgency` is optional and
+   * defaults to "normal" so existing callers keep working unchanged.
+   */
+  add: (input: {
+    title: string;
+    category: string | null;
+    note?: string;
+    urgency?: NeedUrgency;
+  }) => void;
   /** Remove a request by id (no-op if absent). */
   remove: (id: string) => void;
   /** Clear all requests. */
@@ -52,6 +72,9 @@ export const useNeedItStore = create<NeedItState>()(
             title: input.title,
             category: input.category,
             note: input.note,
+            // Default to "normal" when omitted so callers/persisted data
+            // without an urgency stay valid.
+            urgency: input.urgency ?? "normal",
             createdAt: Date.now(),
           };
           return { requests: [request, ...state.requests] };
