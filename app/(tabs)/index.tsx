@@ -113,7 +113,7 @@ export default function FeedScreen() {
             <Pressable
               style={shadows.soft}
               className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:opacity-70"
-              onPress={() => {}}
+              onPress={() => router.push("/notifications")}
               accessibilityRole="button"
               accessibilityLabel="Notifications"
             >
