@@ -51,6 +51,7 @@ export default function WishlistScreen() {
           title="Your wishlist is empty"
           subtitle="Tap the heart on any listing to save it here."
           action={{ label: "Browse the feed", onPress: () => router.push("/") }}
+          tone="violet"
         />
       ) : (
         <WishlistBody ids={ids} />

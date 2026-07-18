@@ -60,6 +60,7 @@ export default function SustainabilityScreen() {
           icon="🌱"
           title="Sign in to see your impact"
           subtitle="Your carbon saved, points, and listing impact will appear here once you're signed in."
+          tone="green"
         />
       )}
     </View>
