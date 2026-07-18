@@ -3,7 +3,7 @@ import "../global.css";
 
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -163,7 +163,15 @@ function RootNavigator() {
     return <View className="flex-1 bg-white" />;
   }
 
-  return <Slot />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "fade",
+        animationDuration: 220,
+      }}
+    />
+  );
 }
 
 /**
