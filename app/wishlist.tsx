@@ -4,7 +4,7 @@ import { ChevronLeft } from "lucide-react-native";
 
 import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
-import { Skeleton } from "@/components/Skeleton";
+import { ListingCardSkeleton } from "@/components/Skeletons";
 import { useListingsByIds } from "@/hooks/useListings";
 import { colors, shadows } from "@/lib/theme";
 import { useWishlistStore } from "@/stores/wishlistStore";
@@ -107,22 +107,5 @@ function WishlistBody({ ids }: { ids: string[] }) {
       contentContainerClassName="px-4 pb-8 pt-2"
       showsVerticalScrollIndicator={false}
     />
-  );
-}
-
-/** A ListingCard-shaped loading placeholder: 4:3 cover block + text lines. */
-function ListingCardSkeleton() {
-  return (
-    <View
-      style={shadows.card}
-      className="mb-3 overflow-hidden rounded-card bg-surface"
-    >
-      <Skeleton height={180} radius={0} />
-      <View className="p-4">
-        <Skeleton width="70%" height={16} />
-        <Skeleton width="40%" height={12} className="mt-2" />
-        <Skeleton width="30%" height={20} className="mt-3" />
-      </View>
-    </View>
   );
 }

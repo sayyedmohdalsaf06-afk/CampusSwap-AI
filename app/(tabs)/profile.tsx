@@ -17,6 +17,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
 import { Skeleton } from "@/components/Skeleton";
+import { ListingCardSkeleton } from "@/components/Skeletons";
 import { StatCard } from "@/components/StatCard";
 import { useMyListings } from "@/hooks/useListings";
 import { supabase } from "@/lib/supabase";
@@ -314,22 +315,5 @@ function QuickAction({ icon, label, onPress }: QuickActionProps) {
         <ChevronRight size={20} color={colors.subtle} />
       </View>
     </Pressable>
-  );
-}
-
-/** A ListingCard-shaped loading placeholder: 4:3 cover block + text lines. */
-function ListingCardSkeleton() {
-  return (
-    <View
-      style={shadows.card}
-      className="mb-3 overflow-hidden rounded-card bg-surface"
-    >
-      <Skeleton height={180} radius={0} />
-      <View className="p-4">
-        <Skeleton width="70%" height={16} />
-        <Skeleton width="40%" height={12} className="mt-2" />
-        <Skeleton width="30%" height={20} className="mt-3" />
-      </View>
-    </View>
   );
 }

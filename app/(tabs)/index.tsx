@@ -8,7 +8,7 @@ import { CategoryChip } from "@/components/CategoryChip";
 import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
-import { Skeleton } from "@/components/Skeleton";
+import { ListingCardSkeleton } from "@/components/Skeletons";
 import { LISTING_CATEGORIES } from "@/components/CategoryPicker";
 import { flattenFeed, useFeed } from "@/hooks/useListings";
 import { supabase } from "@/lib/supabase";
@@ -349,22 +349,5 @@ function FeedBody({
         ) : null
       }
     />
-  );
-}
-
-/** A ListingCard-shaped loading placeholder: 4:3 cover block + text lines. */
-function ListingCardSkeleton() {
-  return (
-    <View
-      style={shadows.card}
-      className="mb-3 overflow-hidden rounded-card bg-surface"
-    >
-      <Skeleton height={180} radius={0} />
-      <View className="p-4">
-        <Skeleton width="70%" height={16} />
-        <Skeleton width="40%" height={12} className="mt-2" />
-        <Skeleton width="30%" height={20} className="mt-3" />
-      </View>
-    </View>
   );
 }
