@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { MotiView } from "moti";
 import type { ReactNode } from "react";
 import {
+  BadgeCheck,
   BarChart3,
   ChevronRight,
   ClipboardList,
   Heart,
   Leaf,
   MessageCircle,
+  Recycle,
   Settings,
   Sparkles,
 } from "lucide-react-native";
@@ -18,7 +21,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { ListingCard } from "@/components/ListingCard";
 import { Skeleton } from "@/components/Skeleton";
 import { ListingCardSkeleton } from "@/components/Skeletons";
-import { StatCard } from "@/components/StatCard";
 import { useMyListings } from "@/hooks/useListings";
 import { supabase } from "@/lib/supabase";
 import { colors, gradients, shadows } from "@/lib/theme";
@@ -36,8 +38,10 @@ import { formatCarbonKg } from "@/utils/format";
  * // fabricates a user. When `profile` is null we render a graceful "sign in"
  * // placeholder instead of crashing.
  *
- * Reskinned to the design system: green gradient hero with avatar initials,
- * soft-shadowed StatCards, and design-system loading / error / empty states.
+ * Reskinned to the design system: navy gradient hero with avatar initials, a
+ * premium "Campus impact" card (CO₂ saved · items reused · trusted status all
+ * derived from already-fetched data), and design-system loading / error /
+ * empty states.
  */
 export default function ProfileScreen() {
   const profile = useAuthStore((s) => s.profile);
@@ -114,6 +118,17 @@ function ProfileContent({ profile }: { profile: Profile }) {
   const displayName =
     profile.display_name ?? profile.email.split("@")[0] ?? "Student";
 
+  // ── Campus impact — derived ENTIRELY from already-fetched data (no new query).
+  // `carbonSaved`: cumulative completed-transaction savings, formatted (Req 6.4).
+  // `itemsReused`: count of this seller's listings that found a second life
+  //   (sold or donated) — guarded when `listings` is still undefined.
+  // `isTrusted`: verified-student status → Trusted Seller badge.
+  const carbonSaved = formatCarbonKg(profile.cumulative_carbon_g);
+  const itemsReused = (listings ?? []).filter(
+    (l) => l.status === "sold" || l.status === "donated",
+  ).length;
+  const isTrusted = profile.verified_student === true;
+
   return (
     <FlatList
       className="flex-1 bg-bg"
@@ -173,20 +188,81 @@ function ProfileContent({ profile }: { profile: Profile }) {
             </View>
           </LinearGradient>
 
-          {/* Stats row: points + carbon saved (Req 6.4, 6.6, 14.8) */}
-          <View className="flex-row gap-3 py-5">
-            <StatCard
-              label="Points earned"
-              value={String(profile.points)}
-              icon={<Sparkles size={14} color={colors.primaryDark} />}
-            />
-            <StatCard
-              label="Carbon saved"
-              value={formatCarbonKg(profile.cumulative_carbon_g)}
-              caption="CO₂e · directional estimate"
-              icon={<Leaf size={14} color={colors.primaryDark} />}
-            />
-          </View>
+          {/* Campus impact — a single premium card summarizing sustainability
+              outcomes, all derived from already-fetched data (Req 6.4, 6.6,
+              14.8). Points stay visible as a subtle chip in the header. */}
+          <MotiView
+            from={{ opacity: 0, translateY: 8 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 380 }}
+            style={shadows.card}
+            className="my-5 rounded-card bg-surface p-5"
+          >
+            {/* Header: title + trust pill */}
+            <View className="flex-row items-center">
+              <View className="mr-2 h-7 w-7 items-center justify-center rounded-full bg-violet-bg">
+                <Sparkles size={15} color={colors.violet.base} />
+              </View>
+              <Text className="text-base font-jakartaBold text-ink">
+                Campus impact
+              </Text>
+              <View className="ml-auto">
+                {isTrusted ? (
+                  <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1">
+                    <BadgeCheck size={13} color={colors.primary} />
+                    <Text className="ml-1 text-xs font-jakartaSemibold text-green-700">
+                      Trusted Seller
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="rounded-full bg-borderLight px-2.5 py-1">
+                    <Text className="text-xs font-jakartaMedium text-muted">
+                      Member
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Subtle points chip — keeps gamification visible without dominating. */}
+            <View className="mt-3 flex-row">
+              <View className="flex-row items-center rounded-full bg-violet-bg px-2.5 py-1">
+                <Sparkles size={12} color={colors.violet.base} />
+                <Text className="ml-1 text-xs font-jakartaSemibold text-violet-text">
+                  {`${profile.points} pts`}
+                </Text>
+              </View>
+            </View>
+
+            {/* Three equal-width mini-metrics separated by subtle dividers. */}
+            <View className="mt-4 flex-row items-stretch">
+              <ImpactMetric
+                icon={<Leaf size={16} color={colors.primary} />}
+                chipClassName="bg-green-50"
+                value={carbonSaved}
+                label="CO₂ saved"
+              />
+              <View className="w-px self-stretch bg-borderLight" />
+              <ImpactMetric
+                icon={<Recycle size={16} color={colors.violet.base} />}
+                chipClassName="bg-violet-bg"
+                value={String(itemsReused)}
+                label="Items reused"
+              />
+              <View className="w-px self-stretch bg-borderLight" />
+              <ImpactMetric
+                icon={
+                  <BadgeCheck
+                    size={16}
+                    color={isTrusted ? colors.primary : colors.subtle}
+                  />
+                }
+                chipClassName={isTrusted ? "bg-green-50" : "bg-borderLight"}
+                value={isTrusted ? "Yes" : "—"}
+                label="Trusted seller"
+              />
+            </View>
+          </MotiView>
 
           {/* Quick actions — entry points to the frontend My Reservations +
               Wishlist stack routes. */}
@@ -288,6 +364,43 @@ function MyListingsBody({
       subtitle="Tap below to list your first item and start swapping."
       action={{ label: "Create a listing", onPress: onCreate }}
     />
+  );
+}
+
+type ImpactMetricProps = {
+  icon: ReactNode;
+  /** Tailwind bg class for the icon chip (green/violet/neutral accent only). */
+  chipClassName: string;
+  value: string;
+  label: string;
+};
+
+/**
+ * One column of the "Campus impact" card: an accent icon chip above a bold
+ * value and a muted label. `flex-1` keeps the three columns equal-width so the
+ * row stays balanced and never clips.
+ */
+function ImpactMetric({ icon, chipClassName, value, label }: ImpactMetricProps) {
+  return (
+    <View className="flex-1 items-center px-1">
+      <View
+        className={`mb-2 h-9 w-9 items-center justify-center rounded-full ${chipClassName}`}
+      >
+        {icon}
+      </View>
+      <Text
+        className="text-lg font-jakartaExtrabold text-ink"
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+      <Text
+        className="mt-0.5 text-xs font-jakartaMedium text-muted"
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
