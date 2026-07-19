@@ -1,0 +1,144 @@
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from "@tanstack/react-query";
+
+import {
+  fetchFeedPage,
+  fetchListingById,
+  fetchListingsByIds,
+  fetchMyListings,
+  fetchPublicProfile,
+  fetchSellerListings,
+  searchListings,
+  type PublicProfile,
+} from "@/services/listingService";
+import type { ListingWithImages } from "@/types";
+
+/** Feed page size — kept in one place so pagination math stays consistent. */
+export const FEED_PAGE_SIZE = 20;
+
+/**
+ * Campus feed hook (design §1.6 Flow 4, Req 4.1, 4.6, 8.2). Wraps
+ * `fetchFeedPage` in an infinite query so the feed loads incrementally as the
+ * user scrolls (Req 8.2). Campus scoping + active-only + recency ordering are
+ * handled by RLS and the service query.
+ *
+ * `getNextPageParam` advances the offset only while a full page came back — a
+ * short/empty page means the end of the feed, so we return `undefined` to stop.
+ */
+export function useFeed() {
+  return useInfiniteQuery<
+    ListingWithImages[],
+    Error,
+    InfiniteData<ListingWithImages[]>,
+    ["feed"],
+    number
+  >({
+    queryKey: ["feed"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      fetchFeedPage({ limit: FEED_PAGE_SIZE, offset: pageParam }),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < FEED_PAGE_SIZE
+        ? undefined
+        : allPages.length * FEED_PAGE_SIZE,
+  });
+}
+
+/**
+ * Flatten the paged feed data into a single list for a FlatList. Safe to call
+ * with `undefined` while the first page is loading.
+ */
+export function flattenFeed(
+  data: InfiniteData<ListingWithImages[]> | undefined
+): ListingWithImages[] {
+  return data?.pages.flat() ?? [];
+}
+
+/**
+ * Single listing hook for the detail screen (design §4.2 `listing/[id].tsx`,
+ * Req 4.6). Disabled until an `id` is present so the param can hydrate.
+ */
+export function useListing(id: string | undefined) {
+  return useQuery<ListingWithImages | null, Error>({
+    queryKey: ["listing", id],
+    queryFn: () => fetchListingById(id as string),
+    enabled: Boolean(id),
+  });
+}
+
+/**
+ * Search + category-filter hook for the Search screen (design §4.2
+ * `(tabs)/search.tsx`; Req 4.2, 4.3, 4.5, 4.6). Always enabled — an empty query
+ * with no category simply returns the recent active campus feed, so the screen
+ * shows content on first open. Campus scope + active-only are enforced by RLS
+ * and the service query (Req 2.2, 4.6).
+ *
+ * The query key includes both inputs so results are cached per (query, category)
+ * combination. A short `staleTime` avoids refetching while the user tweaks
+ * filters within a few seconds.
+ */
+export function useSearchListings(query: string, category: string | null) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["search", query, category],
+    queryFn: () => searchListings({ query, category }),
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Listings looked up by a set of ids for the (local, frontend-only) Wishlist
+ * screen. Disabled while the id list is empty so an empty wishlist never issues
+ * a query. The query key includes the ids so the cache updates as the wishlist
+ * changes. Listings hidden by RLS simply won't be returned (Req 2.2, 4.6).
+ */
+export function useListingsByIds(ids: string[]) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["listings-by-ids", ids],
+    queryFn: () => fetchListingsByIds(ids),
+    enabled: ids.length > 0,
+  });
+}
+
+/**
+ * Current student's own listings for the Profile screen (design §4.2 Profile,
+ * Req 7.2). Disabled until a `sellerId` is available (e.g. while the auth
+ * profile hydrates) so we never query with an undefined owner.
+ */
+export function useMyListings(sellerId: string | undefined) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["my-listings", sellerId],
+    queryFn: () => fetchMyListings(sellerId as string),
+    enabled: Boolean(sellerId),
+  });
+}
+
+/**
+ * A seller's ACTIVE listings for the (frontend-only) public Seller Profile
+ * screen (READ-ONLY, additive). Disabled until a `sellerId` is present so we
+ * never query with an undefined owner. Listings hidden by RLS (e.g. another
+ * campus) simply won't be returned (Req 2.2, 4.6).
+ */
+export function useSellerListings(sellerId: string | undefined) {
+  return useQuery<ListingWithImages[], Error>({
+    queryKey: ["seller-listings", sellerId],
+    queryFn: () => fetchSellerListings(sellerId as string),
+    enabled: Boolean(sellerId),
+  });
+}
+
+/**
+ * Best-effort public profile for the Seller Profile header (READ-ONLY,
+ * additive). Returns null when RLS restricts the read to the row owner — the
+ * consuming screen falls back to a generic "Campus seller" header. Disabled
+ * until an `id` is present.
+ */
+export function usePublicProfile(id: string | undefined) {
+  return useQuery<PublicProfile | null, Error>({
+    queryKey: ["public-profile", id],
+    queryFn: () => fetchPublicProfile(id as string),
+    enabled: Boolean(id),
+  });
+}
